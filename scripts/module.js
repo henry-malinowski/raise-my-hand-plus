@@ -253,23 +253,23 @@ Hooks.once('init', function() {
 });
 
 Hooks.on("getSceneControlButtons", function(controls) {
-  let tileControls = controls.find(x => x.name === "token");
-  tileControls.tools.push({
-    icon: "fas fa-hand-paper",
-    name: "raise-my-hand",
-    title: "✋Raise My Hand",
-    button: true,
-    onClick: () => window.game.handRaiser.toggle()
-  });
-  
-  if ( game.settings.get("raise-my-hand", "xcard") ) {
-    tileControls.tools.push({
-      icon: "fas fa-times",
-      name: "x-card",
-      title: "X Card",
-      button: true,
-      onClick: () => window.game.handRaiser.showXCardDialogForEveryoneSocket()
-    });  
-  }
+  let tileControls = controls['tokens'];
 
+  tileControls.tools['raise-my-hand'] = {
+    icon: 'fas fa-hand-paper',
+    name: 'raise-my-hand',
+    title: '✋Raise My Hand',
+    toggle: true,
+    onChange: () => window.game.handRaiser.toggle(),
+    visible: true,
+  };
+
+  tileControls.tools['x-card'] = {
+    icon: 'fas fa-times',
+    name: 'x-card',
+    title: 'X-Card',
+    button: true,
+    onChange: () => window.game.handRaiser.showXCardDialogForEveryoneSocket(),
+    visible: game.settings.get("raise-my-hand", "xcard"),
+  };
 });

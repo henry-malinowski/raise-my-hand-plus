@@ -11,10 +11,10 @@
     }
   ],
   
-  "version": "1.4.9",
+  "version": "1.5.0",
   "compatibility": {
-    "minimum": "12",
-    "verified": "12"
+    "minimum": "13",
+    "verified": "13"
   },
   
   "scripts": [],
@@ -60,8 +60,8 @@
   
   "socket": true,
   
-  "url": "https://github.com/brunocalado/raise-my-hand-plus",
-  "manifest": "https://raw.githubusercontent.com/brunocalado/raise-my-hand-plus/main/module.json",
-  "download": "https://codeload.github.com/brunocalado/raise-my-hand-plus/zip/main"
+  "url": "https://github.com/henry-malinowski/raise-my-hand-plus",
+  "manifest": "https://raw.githubusercontent.com/henry-malinowski/raise-my-hand-plus/main/module.json",
+  "download": "https://codeload.github.com/henry-malinowski/raise-my-hand-plus/zip/main"
 
 }
