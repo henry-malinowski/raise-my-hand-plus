@@ -78,7 +78,7 @@ You also need to share with me the default name convention for your language. Th
 If you want to use this module on v11 you can download it from [here](https://github.com/brunocalado/raise-my-hand-plus/tree/172dc1da4db66871dd12fe168b82cb56cb759668). Click Code and download zip.
 
 # V12
-If you want to use this module on v11 you can download it from [here](https://github.com/brunocalado/raise-my-hand-plus/tree/172dc1da4db66871dd12fe168b82cb56cb759668). Click Code and download zip.
+If you want to use this module on v12 you can download it from [here](https://github.com/brunocalado/raise-my-hand-plus/archive/7c16ec321080a57eedd4b8b9b9054b11d4a6649c.zip). Click Code and download zip.
 
 # Acknowledgements
 - henry-malinowski
