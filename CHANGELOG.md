@@ -1,3 +1,6 @@
+1.5.0
+- v13 https://github.com/brunocalado/raise-my-hand-plus/issues/20
+
 1.4.9
 - fix for sound
 

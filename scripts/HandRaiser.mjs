@@ -184,22 +184,33 @@ export default class HandRaiser {
   // X-Card
   async showXCardDialogForEveryone() {
     const myDialogOptions = {};
-    myDialogOptions['id'] = 'raise-my-hand-dialog';
-    myDialogOptions['resizable'] = false;
-    myDialogOptions['width'] = 370;
-    myDialogOptions['height'] = 440;
+    //myDialogOptions['id'] = 'raise-my-hand-dialog';
+    //myDialogOptions['resizable'] = false;
+    //myDialogOptions['width'] = 370;
+    //myDialogOptions['height'] = 440;
     
     const imagePath = "modules/raise-my-hand/assets/xcard.webp";
-    const templateData = { image_path: imagePath };
-    const myContent = await renderTemplate("modules/raise-my-hand/templates/xcard.html", templateData);
+    //const templateData = { image_path: imagePath };
+    //const myContent = await renderTemplate("modules/raise-my-hand/templates/xcard.html", templateData);
     
+    new foundry.applications.apps.ImagePopout({
+      window: {
+        icon: 'fas fa-times',
+        title: "Stop!",
+        resizable: false,
+      },
+      src: imagePath,
+      id: 'raise-my-hand-dialog',
+    }).render({force: true});
+    
+/*    
     new Dialog({
         title: 'Stop!',
         content: myContent,
         buttons: {}
       }, myDialogOptions
     ).render(true);  
-    
+*/    
     // Sound X-Card
     if (game.settings.get("raise-my-hand", "xcardsound")) {      
       const soundVolume = game.settings.get("raise-my-hand", "xcardsoundvolume");

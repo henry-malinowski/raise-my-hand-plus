@@ -77,6 +77,12 @@ You also need to share with me the default name convention for your language. Th
 # V11
 If you want to use this module on v11 you can download it from [here](https://github.com/brunocalado/raise-my-hand-plus/tree/172dc1da4db66871dd12fe168b82cb56cb759668). Click Code and download zip.
 
+# V12
+If you want to use this module on v11 you can download it from [here](https://github.com/brunocalado/raise-my-hand-plus/tree/172dc1da4db66871dd12fe168b82cb56cb759668). Click Code and download zip.
+
+# Acknowledgements
+- henry-malinowski
+
 # License
 - Code: [LICENSE](https://github.com/brunocalado/raise-my-hand-plus/blob/main/LICENSE)
 - This module is a fork from (Raise My Hand): https://github.com/cswendrowski/FoundryVTT-Raise-My-Hand
