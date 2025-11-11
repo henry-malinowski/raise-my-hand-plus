@@ -1,0 +1,16 @@
+{
+  "i18n-ally.localesPaths": ["lang"],
+  "i18n-ally.annotations": true,
+  "i18n-ally.sourceLanguage": "en",
+  "i18n-ally.displayLanguage": "en",
+  "i18n-ally.enabledFrameworks": ["custom"],
+  "i18n-ally.keystyle": "nested",
+  "i18n-ally.pathMatcher": "{locale}.json",
+  "i18n-ally.namespace": false,
+  "i18n-ally.readonly": false,
+  "i18n-ally.usage.scanningIgnore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.git/**"
+  ],
+}

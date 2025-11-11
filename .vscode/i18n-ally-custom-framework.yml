@@ -1,0 +1,16 @@
+languageIds:
+  - javascript
+  - typescript
+
+# Match string literals starting with "raise-my-hand."
+usageMatchRegex:
+  - "['\"`](raise-my-hand\\.[^'\"`]+)['\"`]"
+  - "\\bgame\\.i18n\\.localize\\(\\s*['\"](raise-my-hand\\.[^'\"]+)['\"]\\s*\\)"
+  - "\\bgame\\.i18n\\.format\\(\\s*['\"](raise-my-hand\\.[^'\"]+)['\"]"
+
+# Refactor templates (optional, for refactoring support)
+refactorTemplates:
+  - "game.i18n.localize(\"$1\")"
+  - "game.i18n.format(\"$1\", $2)"
+
+monopoly: true

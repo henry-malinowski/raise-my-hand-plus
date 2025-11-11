@@ -1,277 +1,290 @@
-export default class HandRaiser {
+import NotificationPopup from "./NotificationPopup.mjs";
+import { socket, MODULE_ID } from "./module.js";
 
-  constructor() {
-    this.isRaised = false;
-    this.userId = game.userId;
-    this.moduleName = "raise-my-hand";
-    
-    // socketlib
-    this.socket = socketlib.registerModule(this.moduleName);       	
-  	this.socket.register("sendNotification", this.sendNotification);
-    //this.socket.register("shakeTheScreen", this.shakeTheScreen);    
-    this.socket.register("showHandDialogForEveryone", this.showHandDialogForEveryone);    // Hand Dialog
-    this.socket.register("showXCardDialogForEveryone", this.showXCardDialogForEveryone);  // X-Card  
-    this.socket.register("showHandForEveryone", this.showHandForEveryone);                // SHOW HAND FOR EVERYONE
-    this.socket.register("removeHandForEveryone", this.removeHandForEveryone);            // REMOVE HAND FOR EVERYONE
+/** @type {Object|null} Track single popup instance and user id that raised the hand */
+let handRaisedPopup = null;
+
+/** @type {number} Timestamp of last hand raise/X-card action (0 = never) */  
+let lastSentNotification = 0;
+
+/** @type {Sound|null} Track the module's currently playing sound */
+let currentPlayingSound = null;
+
+// ----------------
+// Helper Functions
+// ----------------
+/**
+ * Get a setting from the module's settings if it exists, Error otherwise.
+ * @param {string} setting - The setting to get.
+ * @throws {Error} If the setting is not specified or does not exist.
+ * @returns {any} The setting's value if it exists.
+ */
+const getSetting = (setting) => game.settings.get(MODULE_ID, setting);
+
+/**
+ * Get the IDs of all active GMs.
+ * @returns {string[]} An array of user IDs of all active GMs.
+ */
+const getActiveGmUserIds = () => game.users.filter(user => user.isGM && user.active).map(user => user.id);
+
+/**
+ * Check if the timeout has passed since the last hand raise/X-card action.
+ * @returns {boolean} True if timeout has passed or is disabled, false if too soon
+ */
+function timeoutPassed() {
+  const timeoutSeconds = getSetting("notificationTimeout");
+  const now = Date.now();
+  return (now - lastSentNotification) >= (timeoutSeconds * 1000);
+}
+
+/**
+ * Wrapper for the AudioHelper.play() method to stop the previous sound if it exists.
+ *
+ * @param {object} data        An object configuring the audio data to play. See AudioHelper.play for details.
+ * @param {string} data.src    The audio source file path, either a public URL or a local path relative to the public directory.
+ * @param {boolean|object} [socketOptions=false]  Socket emit options passed straight through to AudioHelper.play.
+ * @returns {Promise<Sound|void>}  A Promise that resolves to a Sound instance, or nothing if autoplay is false.
+ */
+async function playSoundWithReplacement(data, socketOptions=false) {
+  // Stop the previous sound if it exists (stop() is idempotent and checks .playing internally)
+  try {
+    await currentPlayingSound?.stop();
+  } catch (error) {
+    console.warn("Error stopping previous sound:", error);
+  }
+  
+  // Play the new sound and store the reference
+  // AudioHelper.play() returns a Sound or void (if autoplay is false)
+  const sound = await foundry.audio.AudioHelper.play(data, socketOptions);
+  // Only store the sound if it was actually created (not undefined)
+  if (sound) {
+    currentPlayingSound = sound;
+  }
+}
+
+// ----------------
+// Core Functions
+// ----------------
+
+/**
+ * Toggle the hand raise/lower state.
+ * @param {Event} event - The event that triggered the toggle.
+ * @param {boolean} active - True if the hand should be raised, false if it should be lowered.
+ * @returns {void}
+ */
+export function toggle(active) {
+  // If trying to raise hand, check timeout first
+  if (active && !timeoutPassed()) {
+    // Reverse the toggle state - the button has already been toggled by Foundry
+    document.querySelector(`[data-tool="raise-my-hand"]`)?.setAttribute('aria-pressed', 'false');
+    return;
   }
 
-  toggle() {
-    if (game.settings.get(this.moduleName, "handToogleBehavior")) {
-      if (this.isRaised) this.lower();
-      else this.raise();
+  active ? raiseHand() : lowerHand();
+}
+
+/**
+ * raiseHand - core socket callbacks & settings:
+ * - showEmojiHandCallback:      showEmojiIndicator + handToogleBehavior
+ * - createUiNotificationSocket: showUiNotification (+makeUiNotificationPermanent, showUiNotificationOnlyToGM)
+ * - CHAT (not a socket):        showUiChatMessage (+showUiChatMessageOnlyForGM, showImageChatMessage, chatMessageImageUserArt, chatimagepath, chatimagewidth)
+ * - createHandPopupSocket:      showDialogImage
+ * - SOUND (hand chime):         handsound, handsoundvolume
+ */
+export async function raiseHand() {
+  // Check timeout to prevent spam
+  if (!timeoutPassed()) return;
+
+  // Update timestamp
+  lastSentNotification = Date.now();
+
+  const id = game.userId;
+  const player = game.users.get(id); // get the player Document
+        
+  // SHOW HAND NEXT TO PLAYER NAME
+  if (getSetting("showEmojiIndicator") && getSetting("handToogleBehavior")) {
+    socket.executeForEveryone(appendEmojiHandSocket, id);
+  }
+
+  // SHOW NOTIFICATION
+  if (getSetting("showUiNotification")) {
+    const isPermanent = getSetting("makeUiNotificationPermanent");
+    
+    if (getSetting("showUiNotificationOnlyToGM")) {
+      //https://github.com/manuelVo/foundryvtt-socketlib#socketexecuteforallgms
+      socket.executeForAllGMs(createUiNotificationSocket, player.name, isPermanent);
     } else {
-      this.raise();      
-    }      
-  }
-
-  async raise() {
-    const id = this.userId;
-    const player = game.users.get(id);
-          
-    if (game.settings.get(this.moduleName, "handToogleBehavior")) {
-      if (this.isRaised) return;    
-      this.isRaised = true;
-      
-      if (game.settings.get(this.moduleName, "showEmojiIndicator")) { // SHOW HAND NEXT TO PLAYER NAME
-        this.socket.executeForEveryone(this.showHandForEveryone, id);              
-      }
-    } 
-    
-    // SHOW NOTIFICATION
-    if (game.settings.get(this.moduleName, "showUiNotification")) {
-      //let player = game.users.get(id);
-      if (game.settings.get(this.moduleName, "showUiNotificationOnlyToGM")) {
-        //https://github.com/manuelVo/foundryvtt-socketlib#socketexecuteforallgms
-        const permanentFlag = game.settings.get(this.moduleName, "makeUiNotificationPermanent");
-        this.socket.executeForAllGMs(this.sendNotification, player, permanentFlag);                    
-      } else {
-        //https://github.com/manuelVo/foundryvtt-socketlib#socketexecuteforeveryone
-        const permanentFlag = game.settings.get(this.moduleName, "makeUiNotificationPermanent");
-        this.socket.executeForEveryone(this.sendNotification, player, permanentFlag);              
-      }
-    }  
-/*
-    // SHAKE SCREEN
-    if (game.settings.get(this.moduleName, "shakescreen")) {
-      //https://github.com/manuelVo/foundryvtt-socketlib#socketexecuteforeveryone            
-      this.socket.executeForEveryone(this.shakeTheScreen); 
+      //https://github.com/manuelVo/foundryvtt-socketlib#socketexecuteforeveryone
+      socket.executeForEveryone(createUiNotificationSocket, player.name, isPermanent);
     }
-*/
-    // ======================================
-    // CHAT
-    if (game.settings.get(this.moduleName, "showUiChatMessage")) {
-      let imagePath;
-      let chatImageWidth = game.settings.get(this.moduleName, "chatimagewidth");
-      let chatData;
-      const showImageChatMessage = game.settings.get(this.moduleName, "showImageChatMessage");
-      let message='';
-      if (showImageChatMessage) {
-        if (game.settings.get(this.moduleName, "chatMessageImageUserArt")) {
-          imagePath = player.avatar;
-        } else {
-          imagePath = game.settings.get("raise-my-hand", "chatimagepath");
-        }
-        message += `<label class="titulo" style="font-size:35px; color: #b02b2e;">${player.name}</label></br><label style="font-size: 15px">${game.i18n.localize("raise-my-hand.CHATMESSAGE")}</label><p><img style="vertical-align:middle" src="${imagePath}" width="${chatImageWidth}%"></p>`; 
-      } else {
-        message += `<label class="titulo" style="font-size:35px; color: #b02b2e;">${player.name}</label></br><label style="font-size: 15px">${game.i18n.localize("raise-my-hand.CHATMESSAGE")}</label>`; 
-      }
-      
-      if (game.settings.get(this.moduleName, "showUiChatMessageOnlyForGM")) {
-        chatData = {
-          speaker: null,
-          content: message,
-          whisper : ChatMessage.getWhisperRecipients("GM")          
-        }; // has their hand raised!
-      } else {
-        chatData = {
-          speaker: null,
-          content: message
-        }; // has their hand raised!        
-      }
-      ChatMessage.create(chatData, {});
-    } // END CHAT
-  
-    // SOUND
-    if (game.settings.get(this.moduleName, "playSound")) {
-      let userType = true;
-      if (game.settings.get(this.moduleName, "playSoundGMOnly")) {
-        userType = this.returnGMs(); // return the GMs IDs
-      } 
-      const soundVolume = game.settings.get("raise-my-hand", "warningsoundvolume");
-      const mySound = game.settings.get("raise-my-hand", "warningsoundpath"); //const mySound = 'modules/raise-my-hand/assets/bell01.ogg';
-      /* ... second params
-      * @param {object|boolean} socketOptions  Options which only apply when emitting playback over websocket.
-      *                         As a boolean, emits (true) or does not emit (false) playback to all other clients
-      *                         As an object, can configure which recipients should receive the event.
-      * @param {string[]} [socketOptions.recipients] An array of user IDs to push audio playback to. All users by default.
-      * create an array with gms ids
-      */      
-      foundry.audio.AudioHelper.play({
-        src: mySound,
-        volume: soundVolume,
-        autoplay: true,
-        loop: false
-      }, userType);
-    } // END SOUND
-
-    // Show dialog image
-    if ( game.settings.get("raise-my-hand", "showDialogMessage") ) {      
-      let imagePath;
-      if (game.settings.get(this.moduleName, "chatMessageImageUserArt")) {
-        imagePath = player.avatar;
-      } else {
-        imagePath = game.settings.get("raise-my-hand", "chatimagepath");
-      }  
-
-      //https://github.com/manuelVo/foundryvtt-socketlib#socketexecuteforeveryone            
-      const dimensions = await this.getDimensions(imagePath);    
-      this.socket.executeForEveryone(this.showHandDialogForEveryone, id, imagePath, dimensions);       
-    }
-
-  } // raise end ----------------------------------
-  
-  //-----------------------------------------------
-  // Lower hand
-  lower() {
-    const id = this.userId;
-    if (!this.isRaised) return;
-    this.isRaised = false;
-    if (game.settings.get(this.moduleName, "showEmojiIndicator")) {
-      this.socket.executeForEveryone(this.removeHandForEveryone, id);              
-    }
-  }
-
-  sendNotification(player, permanentFlag) {    
-    ui.notifications.notify( '✋ ' + player.name + game.i18n.localize("raise-my-hand.UINOTIFICATION"), 'info', {permanent: permanentFlag} ); 
-  }   
-
-  showHandForEveryone(id) {       //THIS WILL ADD THE HAND
-    $("[data-user-id='" + id + "'] > .player-name").append("<span class='raised-hand'>✋</span>");
-  }   
-
-  removeHandForEveryone(id) {     //THIS WILL REMOVE THE HAND
-    $("[data-user-id='" + id + "'] > .player-name > .raised-hand").remove();
-  }   
-
-  //-----------------------------------------------
-  // Show  dialog with hand to everyone
-  async showHandDialogForEveryone(id, imagePath, dimensions) {
-    const myDialogOptions = {};
-    myDialogOptions['id'] = 'raise-my-hand-dialog';
-    myDialogOptions['resizable'] = false;
-    
-    if(dimensions.width>500 || dimensions.height>500) {
-      myDialogOptions['width'] = 500;
-      myDialogOptions['height'] = 500;      
-    } else {
-      myDialogOptions['width'] = '100%';
-      myDialogOptions['height'] = '100%';
-    }
-
-    const player = game.users.get(id);
-    const templateData = { image_path: imagePath, player_name: player.name, player_color: player.color };
-    const myContent = await renderTemplate("modules/raise-my-hand/templates/hand.html", templateData);
-    
-    new Dialog({
-        title: player.name,
-        content: myContent,
-        buttons: {}
-      }, myDialogOptions
-    ).render(true);    
-  }
-
-  //-----------------------------------------------
-  // X-Card
-  async showXCardDialogForEveryone() {
-    const myDialogOptions = {};
-    //myDialogOptions['id'] = 'raise-my-hand-dialog';
-    //myDialogOptions['resizable'] = false;
-    //myDialogOptions['width'] = 370;
-    //myDialogOptions['height'] = 440;
-    
-    const imagePath = "modules/raise-my-hand/assets/xcard.webp";
-    //const templateData = { image_path: imagePath };
-    //const myContent = await renderTemplate("modules/raise-my-hand/templates/xcard.html", templateData);
-    
-    new foundry.applications.apps.ImagePopout({
-      window: {
-        icon: 'fas fa-times',
-        title: "Stop!",
-        resizable: false,
-      },
-      src: imagePath,
-      id: 'raise-my-hand-dialog',
-    }).render({force: true});
-    
-/*    
-    new Dialog({
-        title: 'Stop!',
-        content: myContent,
-        buttons: {}
-      }, myDialogOptions
-    ).render(true);  
-*/    
-    // Sound X-Card
-    if (game.settings.get("raise-my-hand", "xcardsound")) {      
-      const soundVolume = game.settings.get("raise-my-hand", "xcardsoundvolume");
-      const mySound = 'modules/raise-my-hand/assets/alarm.ogg';
-      foundry.audio.AudioHelper.play({
-        src: mySound,
-        volume: soundVolume,
-        autoplay: true,
-        loop: false
-      }, true);    
-    } // END IF
-  }
-  
-  //-----------------------------------------------
-  // X-Card 
-  async showXCardDialogForEveryoneSocket() {
-    if (game.settings.get("raise-my-hand", "xcardgmonly")) {
-      this.socket.executeForAllGMs(this.showXCardDialogForEveryone);
-    } else {
-      this.socket.executeForEveryone(this.showXCardDialogForEveryone);
-    }
-    
-  }
-  
-  // 
-  async getDimensions(path) {
-    const fileExtension = path.split('.').pop();     
-    let img = new Image();
-    return await new Promise(resolve => { 
-      img.onload = function() {
-        resolve({width: this.width, height: this.height});
-      };
-      img.src = path;
-    });
   }  
 
-  //-----------------------------------------------
-  // 
-  async returnGMs() {
-    // Obtém todos os usuários que estão atualmente conectados
-    const connectedUsers = game.users.filter(user => user.active);
+  // CHAT
+  if (getSetting("showUiChatMessage")) {
+    let message = `<div class="raise-my-hand-msg"><h3>${player.name}</h3><h4>${game.i18n.localize("raise-my-hand.CHATMESSAGE")}</h4>`;
+
+    if (getSetting("showImageChatMessage")) {
+      const chatImageWidth = getSetting("chatimagewidth");
+      const imagePath = getSetting("chatMessageImageUserArt") ? player.avatar : getSetting("chatimagepath");
+
+      message += `<p><img src="${imagePath}" width="${chatImageWidth}%"></p>`;
+    }
+
+    message += `</div>`;
     
-    // Filtra apenas os GMs conectados
-    const connectedGMs = connectedUsers.filter(user => user.isGM);
-    
-    // Retorna uma lista de nomes de usuário dos GMs conectados
-    return connectedGMs.map(user => user.id);
+    let chatData = {
+      speaker: null,
+      content: message,
+      ...(getSetting("showUiChatMessageOnlyForGM") && { whisper: ChatMessage.getWhisperRecipients("GM") })
+    };
+    ChatMessage.create(chatData, {});
   }
 
-/*  
-  shakeTheScreen() {
-    const intensity = 1;
-    const duration = 500;
-    const iteration = 3;
-    
-    if (game.modules.get('kandashis-fluid-canvas')?.active) { 
-      FluidCanvas.earthquake(intensity, duration, iteration);
-    } else {
-      ui.notifications.error( '✋ ' + game.i18n.localize("raise-my-hand.kandashisfluidcanvas") ); //
-    }       
-  } 
-*/
+  // SHOW HAND (OR USER IMAGE) POPUP
+  if (getSetting("showDialogMessage")) {
+    const imagePath = getSetting("chatMessageImageUserArt") ? player.avatar : getSetting("chatimagepath");
+    socket.executeForEveryone(createHandPopupSocket, id, imagePath);
+  }
+  
+  // SOUND
+  if (getSetting("playSound")) {
+    let userType = getSetting("playSoundGMOnly") ? getActiveGmUserIds() : true;
 
+    await playSoundWithReplacement({
+      src: getSetting("warningsoundpath"),
+      volume: getSetting("warningsoundvolume"),
+      autoplay: true
+    }, userType);
+  }
+}
+
+/**
+ * Remove the hand raised indicator from the player's name and close the hand popup if it exists.
+ * @returns {void}
+ */
+export function lowerHand() {
+  const id = game.userId;
+  if (getSetting("showEmojiIndicator")) {
+    socket.executeForEveryone(removeEmojiHandSocket, id);              
+  }
+
+  if (getSetting("showDialogMessage")) {
+    socket.executeForEveryone(closeHandPopupSocket, id);
+  }
+}
+
+/**
+ * Show the X-card dialog to the configured recipients.
+ * @returns {void}
+ */
+export function showXCardDialog() {
+  // Check timeout to prevent spam (same as raiseHand)
+  if (!timeoutPassed()) return;
+
+  // Update timestamp
+  lastSentNotification = Date.now();
+  const id = game.userId;
+
+  if (getSetting("xcardgmonly")) {
+    socket.executeForAllGMs(createXCardPopupSocket, id);
+  } else {
+    socket.executeForEveryone(createXCardPopupSocket, id);
+  }
+}
+
+// ----------------
+// Socket Callbacks
+// ----------------
+/**
+ * Create a localized UI notification with the name of the player who raised the hand.
+ * @param {string} name - The name of the player who raised the hand.
+ * @param {boolean} permanent - True if the notification should be permanent, false if it should be temporary.
+ * @returns {void}
+ */
+export function createUiNotificationSocket(name, permanent) {
+  ui.notifications.info("raise-my-hand.UINOTIFICATION", { format: {name}, permanent});
+}
+
+/**
+ * Append the hand raised indicator to the player's name.
+ * @param {string} id - The ID of the player who raised the hand.
+ * @returns {void}
+ */
+export function appendEmojiHandSocket(id) {
+  const playerName = document.querySelector(`[data-user-id="${id}"] > .player-name`);
+  if (!playerName?.querySelector('.raise-my-hand-indicator')) {
+    playerName.appendChild(Object.assign(document.createElement('span'), { className: 'raise-my-hand-indicator' }));
+  }
+}
+
+/**
+ * Remove the hand raised indicator from the player's name if it exists.
+ * @param {string} id - The ID of the player who raised the hand.
+ * @returns {void}
+ */
+export function removeEmojiHandSocket(id) {
+  document.querySelector(`[data-user-id="${id}"] > .player-name > .raise-my-hand-indicator`)?.remove();
+}
+
+/**
+ * Create a popup with the player's name and image.
+ * @param {string} id - The ID of the player who raised the hand.
+ * @param {string} imagePath - The path to the image to display in the popup.
+ * @returns {void}
+ */
+export async function createHandPopupSocket(id, imagePath) {
+  const name = game.users.get(id).name;
+
+  const popup = new NotificationPopup({
+    templateData: { imagePath, name },
+    window: {
+      title: game.i18n.format("raise-my-hand.UINOTIFICATION", {name}),
+      resizable: false
+    }
+  });
+  handRaisedPopup = { popup, id };
+  await popup.render({force: true});
+}
+
+/**
+ * Close the hand popup if it exists and is associated with the player.
+ * @param {string} id - The ID of the player who raised the hand.
+ * @returns {void}
+ */
+export async function closeHandPopupSocket(id) {
+  if (handRaisedPopup?.id === id) {
+    await handRaisedPopup.popup?.close();
+    handRaisedPopup = null;
+  }
+}
+
+/**
+ * Create a popup with the X-card image and play the X-card sound if enabled.
+ * @returns {void}
+ */
+export async function createXCardPopupSocket(id) {
+  const name = game.users.get(id).name;
+
+  const popup = new NotificationPopup({
+    classes: ["themed", "theme-dark"],
+    templateData: { imagePath: "modules/raise-my-hand/assets/xcard.svg", name },
+    window: {
+      title: game.i18n.localize("raise-my-hand.ui.xcard.title"),
+      icon: 'fas fa-times',
+      resizable: false
+    }
+  });
+
+  const promises = [popup.render({force: true})];
+  
+  // Sound X-Card
+  if (getSetting("xcardsound")) {      
+    promises.push(playSoundWithReplacement({
+      src: 'modules/raise-my-hand/assets/alarm.ogg',
+      volume: getSetting("xcardsoundvolume"),
+      autoplay: true
+    }, true));    
+  }
+
+  await Promise.all(promises);
 }

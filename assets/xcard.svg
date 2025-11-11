@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="1000" height="1000" fill-rule="evenodd" stroke-linecap="round" stroke-miterlimit="23" clip-rule="evenodd">
+  <defs>
+    <filter id="c" width="1.19" height="1.19" x="-.09" y="-.09" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+    <filter id="d" width="1.12" height="1.12" x="-.06" y="-.06" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="12"/>
+    </filter>
+    <filter id="b" width="1.06" height="1.06" x="-.03" y="-.03" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+  <path fill="#13151b" d="M0 0h1000v1000H0z"/>
+  <clipPath id="a">
+    <path d="M0 0h1000v1000H0z"/>
+  </clipPath>
+  <g clip-path="url(#a)">
+    <g fill="none">
+      <path stroke="#ff9d9e" stroke-width="4" d="M957.5 97.4v805.2c0 30.3-24.6 54.9-54.9 54.9H97.4c-30.3 0-54.9-24.6-54.9-54.9V97.4c0-30.3 24.6-54.9 54.9-54.9h805.2c30.3 0 54.9 24.6 54.9 54.9z"/>
+      <path stroke="red" stroke-width="11" d="M957.5 97.4v805.2c0 30.3-24.6 54.9-54.9 54.9H97.4c-30.3 0-54.9-24.6-54.9-54.9V97.4c0-30.3 24.6-54.9 54.9-54.9h805.2c30.3 0 54.9 24.6 54.9 54.9z" filter="url(#b)" style="mix-blend-mode:lighten"/>
+    </g>
+    <g fill="#8c0e12" stroke="#ff948c" stroke-width="4">
+      <path d="M351.3 500 230 378.7 378.7 230 500 351.3 621.3 230 770 378.7 648.7 500 770 621.3 621.3 770 500 648.7 378.7 770 230 621.3Z" filter="url(#c)" style="mix-blend-mode:normal" transform="translate(-18.76 -18.76) scale(1.038)"/>
+      <path d="M351.3 500 230 378.7 378.7 230 500 351.3 621.3 230 770 378.7 648.7 500 770 621.3 621.3 770 500 648.7 378.7 770 230 621.3Z"/>
+      <path d="M351.3 500 230 378.7 378.7 230 500 351.3 621.3 230 770 378.7 648.7 500 770 621.3 621.3 770 500 648.7 378.7 770 230 621.3Z" filter="url(#d)" opacity=".8" style="mix-blend-mode:overlay" transform="matrix(.992 0 0 .992 3.96 3.96)"/>
+    </g>
+  </g>
+</svg>

@@ -2,51 +2,28 @@
 A player can click in the hand to request attention. There is also a X Button for X-Card by John Stavropoulos. 
 
 ## Raise my Hand Buttons
-<table>
-<thead>
-  <tr>
-    <th>
-      <p align="center">
-        <img width="700" src="assets/doc_buttons.webp">
-      </p>
-    </th>
-  </tr>
-</thead>
-</table> 
-
-## Keybindings
-<table>
-<thead>
-  <tr>
-    <th>
-      <p align="center">
-        <img width="700" src="assets/doc_keys.webp">
-      </p>
-    </th>
-  </tr>
-</thead>
-</table> 
+<div align="center">
+  <img width="80%" src="assets/doc_buttons.webp">
+</div>
 
 ## Settings
-<table>
-<thead>
-  <tr>
-    <th>
-      <p align="center">
-        <img width="700" src="assets/doc_settings.webp">
-      </p>
-    </th>
-  </tr>
-</thead>
-</table> 
+<div align="center">
+  <img width="80%" src="assets/doc_settings.webp">
+</div>
+
+## Keybindings
+<div align="center">
+  <img width="80%" src="assets/doc_keys.webp">
+</div>
+
 
 ## Features
 - A small hand will appear next to the player name if you are in **Toogle Mode**.
 - A notification warning will be displayed. You can set to everyone or just GM users. You can make the notification persistent.
 - A sound will be played. You can set the sound and volume.
 - A message will be sent to the chat. It will get the user color. You can use player avatar as image. You can set to everyone or just GM users.
-- NOT WORKING ANYMORE! You can shake the screen. **Requires Fluid Canvas**.
-- Foundry VTT Keybind. Check Controls.
+- Automatically enforce timeout on notifications to prevent spam.
+- Foundry VTT Keybinds. Check Controls.
 - You can display a dialog with a image.
 - [X-Card by John Stavropoulos](https://docs.google.com/document/d/1SB0jsx34bWHZWbnNIVVuMjhDkrdFGo1_hSC2BWPlI3A/edit) 
 
@@ -55,7 +32,7 @@ If you want to translate this module [DOWNLOAD THIS FILE](https://raw.githubuser
 
 You also need to share with me the default name convention for your language. This is very easy to get. 
 - Find a system or module which is translated to your language. 
-- Open the **module.json** or **system.json** file.
+- Open the **module.json** file.
 - You should find something like the code above. It's under **languages**. Share with me **lang, name and path** for your language.
 ```json
 {
@@ -64,9 +41,9 @@ You also need to share with me the default name convention for your language. Th
   "path": "lang/en.json"
 },
 {
-    "lang": "fr",
-    "name": "Français",
-    "path": "lang/fr.json"
+  "lang": "fr",
+  "name": "Français",
+  "path": "lang/fr.json"
 }  
 ```
 
@@ -81,7 +58,7 @@ If you want to use this module on v11 you can download it from [here](https://gi
 If you want to use this module on v12 you can download it from [here](https://github.com/brunocalado/raise-my-hand-plus/archive/7c16ec321080a57eedd4b8b9b9054b11d4a6649c.zip). Click Code and download zip.
 
 # Acknowledgements
-- henry-malinowski
+- [henry-malinowski](https://github.com/henry-malinowski/)
 
 # License
 - Code: [LICENSE](https://github.com/brunocalado/raise-my-hand-plus/blob/main/LICENSE)
@@ -90,9 +67,9 @@ If you want to use this module on v12 you can download it from [here](https://gi
 - hand sound: https://creativecommons.org/licenses/by/4.0/
 - [X-Card by John Stavropoulos](https://docs.google.com/document/d/1SB0jsx34bWHZWbnNIVVuMjhDkrdFGo1_hSC2BWPlI3A/edit)
 - X Card Designer: [Matheus Moreno Mota](https://www.instagram.com/matheus_mesmo/)
-<p align="center">
-  <img width="200" src="assets/capybara.webp">
-</p>
+<div align="center">
+  <img width="30%" src="assets/capybara.webp">
+</div>
 
 # Mestre Digital
 About this module creator: https://sites.google.com/view/mestredigitalmodules

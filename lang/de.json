@@ -1,70 +1,69 @@
 {
-    "raise-my-hand":{
-        "UINOTIFICATION":" hat die Hand gehoben.",
-        "CHATMESSAGE":" hat die Hand gehoben!",
-        "kandashisfluidcanvas":"Du brauchst das Fluid Canvas Modul!",
-        
-        "settings":{
-            "handtooglebehavior": {
-                "name": "Toggle Modus",
-                "hint": "Wenn diese Option eingeschaltet ist, funktioniert das Modul im Toggle Modus, d.h. ein Klick auf das Hand-Zeichen hebt die Hand und ein weiterer Klick senkt sie wieder. Ist der Toggle Modus aus löst jeder Klick auf die Hand eine Notification aus. Das Hand-Emoji neben den Spielernamen funktioniert dann jedoch nicht mehr."
-              }, 
-              "displayhand":{
-                "name":"Zeige das Handicon in der Spielerliste",
-                "hint":"Ein Handicon wird neben dem Namen in der Spielerliste angezeigt."
-              },
-              "showuinotification":{
-                "name":"Zeige UI-Benachrichtigung",
-                "hint":"Eine UI-Benachrichtigung wird allen Spielern angezeigt."
-              },
-              "makeuinotificationpermanent":{
-                "name":"Permanente UI-Benachrichtigung",
-                "hint":"Die Benachrichtigung wird angezeigt, bis sie aktiv weggeklickt wird."
-              },     
-              "showuinotificationonlytogm": {
-                "name": "UI-Benachrichtigung nur für DM",
-                "hint": "Zeigt die UI-Benachrichtigung nur dem DM."
-                },  
-              "showuichatmessage":{
-                "name":"Zeige eine Chatnachricht an",
-                "hint":"Eine Benachrichtigung wird im Chat ausgegeben."
-              },
-              "showuichatmessageonlyforgm": {
-                "name": "Chatnachricht nur für DM",
-                "hint": "Die Chatnachricht ist nur für den DM sichtbar."
-              },
-              "showimagechatmessage":{
-                "name":"Bild zur Chatnachricht",
-                "hint":"Zur Chatnachricht wird zusätzlich ein Bild angezeigt."
-              },
-              "chatimagepath":{
-                "name":"Pfad zum Bild",
-                "hint":"Gibt den Pfand an, zu dem Bild, das im Chat gezeigt werden soll."
-              },
-              "chatimagewidth":{
-                "name":"Anzeigebreite des Bildes",
-                "hint":"Gib in % an, wie gross das Bild angezeigt werden soll."
-              },
-              "chatmessageimageuserart":{
-                "name":"Bild mit Avatarbild ersetzen",
-                "hint":"Hierdurch wird das Bild durch das jeweilige Avatarbild ersetzt."
-              },
-              "playsound":{
-                "name":"Sound abspielen",
-                "hint":"Ein Audiosignal wird abgespielt."
-              },
-              "warningsoundpath":{
-                "name":"Pfad für das Audiosignal",
-                "hint":"Hier kannst du einen Pfad zu einem Audiosignal angeben."
-              },
-              "warningsoundvolume":{
-                "name":"Lautstärke des Audiosignals",
-                "hint":"Hier kannst du angeben, wie laut es abgespielt werden soll. 0.1 steht für 10% Lautstärke und 0.6 für 60%."
-              },
-              "shakescreen":{
-                "name":"Bildschirmwackeln",
-                "hint":"Der Bildschirminhalt wird geschüttelt. BENÖTIGT das Fluid Canvas MODUL!"
-              }
-        }
+  "raise-my-hand": {
+    "UINOTIFICATION": "✋ {name} hat die Hand gehoben.",
+    "CHATMESSAGE": "hat die Hand gehoben!",
+    "ui": {
+      "xcard": {
+        "title": "Halt!"
+      }
+    },
+    "settings": {
+      "handtooglebehavior": {
+        "name": "Toggle Modus",
+        "hint": "Wenn diese Option eingeschaltet ist, funktioniert das Modul im Toggle Modus, d.h. ein Klick auf das Hand-Zeichen hebt die Hand und ein weiterer Klick senkt sie wieder. Ist der Toggle Modus aus löst jeder Klick auf die Hand eine Notification aus."
+      },
+      "displayhand": {
+        "name": "Zeige das Handicon in der Spielerliste",
+        "hint": "Ein Handicon wird neben dem Namen in der Spielerliste angezeigt."
+      },
+      "showuinotification": {
+        "name": "Zeige UI-Benachrichtigung",
+        "hint": "Eine UI-Benachrichtigung wird allen Spielern angezeigt."
+      },
+      "makeuinotificationpermanent": {
+        "name": "Permanente UI-Benachrichtigung",
+        "hint": "Die Benachrichtigung wird angezeigt, bis sie aktiv weggeklickt wird."
+      },
+      "showuinotificationonlytogm": {
+        "name": "UI-Benachrichtigung nur für DM",
+        "hint": "Zeigt die UI-Benachrichtigung nur dem DM."
+      },
+      "showuichatmessage": {
+        "name": "Zeige eine Chatnachricht an",
+        "hint": "Eine Benachrichtigung wird im Chat ausgegeben."
+      },
+      "showuichatmessageonlyforgm": {
+        "name": "Chatnachricht nur für DM",
+        "hint": "Die Chatnachricht ist nur für den DM sichtbar."
+      },
+      "showimagechatmessage": {
+        "name": "Bild zur Chatnachricht",
+        "hint": "Zur Chatnachricht wird zusätzlich ein Bild angezeigt."
+      },
+      "chatimagepath": {
+        "name": "Pfad zum Bild",
+        "hint": "Gibt den Pfand an, zu dem Bild, das im Chat gezeigt werden soll."
+      },
+      "chatimagewidth": {
+        "name": "Anzeigebreite des Bildes",
+        "hint": "Gib in % an, wie gross das Bild angezeigt werden soll."
+      },
+      "chatmessageimageuserart": {
+        "name": "Bild mit Avatarbild ersetzen",
+        "hint": "Hierdurch wird das Bild durch das jeweilige Avatarbild ersetzt."
+      },
+      "playsound": {
+        "name": "Sound abspielen",
+        "hint": "Ein Audiosignal wird abgespielt."
+      },
+      "warningsoundpath": {
+        "name": "Pfad für das Audiosignal",
+        "hint": "Hier kannst du einen Pfad zu einem Audiosignal angeben."
+      },
+      "warningsoundvolume": {
+        "name": "Lautstärke des Audiosignals",
+        "hint": "Hier kannst du angeben, wie laut es abgespielt werden soll. 0.1 steht für 10% Lautstärke und 0.6 für 60%."
+      }
     }
+  }
 }
