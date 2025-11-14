@@ -106,7 +106,7 @@ jobs:
              ./module.zip                        \
             `# The files that will be included.` \
             module.json                          \
-            README.md                            \
+            CHANGELOG.md                         \
             LICENSE                              \
             templates                            \
             scripts/                             \
