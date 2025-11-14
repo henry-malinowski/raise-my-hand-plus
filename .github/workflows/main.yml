@@ -39,11 +39,11 @@ env:
 
   # The manifest URL for this specific release version.
   # Each version should point to its own manifest file, not /latest/.
-  version_manifest_url: "https://github.com/${{github.repository}}/releases/download/${{ github.event.release.tag_name || inputs.tag_name }}/module.json"
+  version_manifest_url: "https://github.com/${{github.repository}}/releases/download/${{ github.event.release.tag_name || github.event.inputs.tag_name }}/module.json"
 
   # The URL to the module archive associated with the module release being
   # processed by this workflow.
-  release_module_url: "https://github.com/${{github.repository}}/releases/download/${{ github.event.release.tag_name || inputs.tag_name }}/module.zip"
+  release_module_url: "https://github.com/${{github.repository}}/releases/download/${{ github.event.release.tag_name || github.event.inputs.tag_name }}/module.zip"
 
 
 on:
@@ -73,16 +73,31 @@ jobs:
       contents: write
 
     steps:
+      - name: Set Tag Name
+        id: set_tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_NAME="${{ github.event.inputs.tag_name }}"
+          else
+            TAG_NAME="${{ github.event.release.tag_name }}"
+          fi
+          
+          echo "Event type: ${{ github.event_name }}"
+          echo "Release tag name: ${{ github.event.release.tag_name }}"
+          echo "Input tag name: ${{ github.event.inputs.tag_name }}"
+          echo "Selected tag name: $TAG_NAME"
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
       - name: Fetch Release Info for Tag
         if: github.event_name == 'workflow_dispatch'
         id: release_info
         run: |
           RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ inputs.tag_name }}")
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.set_tag.outputs.tag_name }}")
           
           # Check if release exists
           if echo "$RELEASE_DATA" | jq -e '.message == "Not Found"' > /dev/null; then
-            echo "Error: No release found for tag ${{ inputs.tag_name }}"
+            echo "Error: No release found for tag ${{ steps.set_tag.outputs.tag_name }}"
             exit 1
           fi
           
@@ -93,8 +108,28 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.release.tag_name || inputs.tag_name }}
+          ref: ${{ steps.set_tag.outputs.tag_name }}
+          fetch-depth: 0
+          fetch-tags: true
 
+      - name: Verify Tag Checkout
+        run: |
+          TAG_NAME="${{ steps.set_tag.outputs.tag_name }}"
+          CURRENT_REF=$(git rev-parse --abbrev-ref HEAD)
+          CURRENT_TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "")
+          
+          echo "Expected tag: $TAG_NAME"
+          echo "Current ref: $CURRENT_REF"
+          echo "Current tag: $CURRENT_TAG"
+          
+          if [ "$CURRENT_REF" = "HEAD" ] && [ -n "$CURRENT_TAG" ]; then
+            echo "✓ Successfully checked out tag: $CURRENT_TAG"
+          elif [ "$CURRENT_REF" = "HEAD" ]; then
+            echo "✓ Checked out specific commit (detached HEAD)"
+          else
+            echo "⚠ Warning: Checked out branch '$CURRENT_REF' instead of tag '$TAG_NAME'"
+            echo "This may cause version extraction issues."
+          fi
 
       # Extract version embedded in the tag.
       # This step expects the tag to be one of the following formats:
@@ -107,7 +142,7 @@ jobs:
         id: get_version
         uses: battila7/get-version-action@v2
         with:
-          tag: ${{ github.event.release.tag_name || inputs.tag_name }}
+          tag: ${{ steps.set_tag.outputs.tag_name }}
 
 
       # Modify "module.json" with values specific to the release.
@@ -166,5 +201,5 @@ jobs:
           prerelease: ${{ github.event.release.prerelease || steps.release_info.outputs.prerelease }}
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: './module.json, ./module.zip'
-          tag: ${{ github.event.release.tag_name || inputs.tag_name }}
+          tag: ${{ steps.set_tag.outputs.tag_name }}
           body: ${{ github.event.release.body || steps.release_info.outputs.body }}
