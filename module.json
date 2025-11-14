@@ -2,27 +2,25 @@
   "id": "raise-my-hand",
   "title": "✋ Raise My Hand",
   "description": "Adds a 'Raise my hand' button that displays a small alert on GM screens that the player would like attention.",
-  
   "authors": [
     {
-      "name": "Mestre Digital",
-      "url": "https://www.youtube.com/c/MestreDigital",
+      "name": "Henry Malinowski",
+      "url": "https://github.com/henry-malinowski",
+      "discord": "hmalinowski",
       "flags": {}
     }
-  ],
-  
-  "version": "1.5.0",
+  ],  
+  "version": "2.0.0",
   "compatibility": {
     "minimum": "13",
-    "verified": "13"
+    "verified": "14.349"
   },
-  
-  "scripts": [],
   "esmodules": [
     "/scripts/module.js"
   ],
-  "styles": ["styles/styles.css"],
-  
+  "styles": [
+    "styles/styles.css"
+  ],
   "languages": [
     {
       "lang": "en",
@@ -45,9 +43,6 @@
       "path": "lang/de.json"
     }
   ],
-  
-  "packs": [],
-
   "relationships": {
     "requires": [
       {
@@ -57,11 +52,11 @@
       }
     ]
   },
-  
   "socket": true,
-  
-  "url": "https://github.com/brunocalado/raise-my-hand-plus",
-  "manifest": "https://raw.githubusercontent.com/brunocalado/raise-my-hand-plus/main/module.json",
-  "download": "https://codeload.github.com/brunocalado/raise-my-hand-plus/zip/main"
-
+  "readme": "https://github.com/henry-malinowski/raise-my-hand-plus/blob/main/README.md",
+  "bugs": "https://github.com/henry-malinowski/raise-my-hand-plus/issues",
+  "changelog": "https://github.com/henry-malinowski/raise-my-hand-plus/blob/main/CHANGELOG.md",
+  "url": "https://github.com/henry-malinowski/raise-my-hand-plus",
+  "manifest": "https://github.com/henry-malinowski/raise-my-hand-plus/releases/latest/download/module.json",
+  "download": "https://github.com/henry-malinowski/raise-my-hand-plus/releases/latest/download/module.zip"
 }

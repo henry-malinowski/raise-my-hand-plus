@@ -1,98 +1,94 @@
 {
-	"raise-my-hand": {
-		"UINOTIFICATION": " está com a mão levantada.",
-		"CHATMESSAGE": "está com a mão levantada!",    
-    "kandashisfluidcanvas": "Você precisa do módulo Fluid Canvas!",    
-    
-		"settings": {
-			"handtooglebehavior": {
+  "raise-my-hand": {
+    "UINOTIFICATION": "✋ {name} está com a mão levantada.",
+    "CHATMESSAGE": "está com a mão levantada!",
+    "ui":
+    {
+      "xcard": {
+        "title": "¡Para!"
+      }
+    },
+    "settings": {
+      "handtooglebehavior": {
         "name": "Operar em Modo de Alternar",
-				"hint": "Quando isso estiver ativado o módulo vai trabalhar no modo de alternar, isso quer dizer que após chamar por atenção você precisa pedir novamente para tirar o pedido. Se essa caixa não estiver ativada toda vez que o módulo for ativado será enviado um pedido por atenção, o ícone da mão vai parar de funcionar também."
-			},      
-			"displayhand": {
+        "hint": "Quando isso estiver ativado o módulo vai trabalhar no modo de alternar, isso quer dizer que após chamar por atenção você precisa pedir novamente para tirar o pedido. Se essa caixa não estiver ativada toda vez que o módulo for ativado será enviado um pedido por atenção."
+      },
+      "displayhand": {
         "name": "Mostrar Mão na Lista de Jogadores",
-				"hint": "Um ícone de mão será mostrado na lista de jogadores."
-			},
-			"showuinotification": {
+        "hint": "Um ícone de mão será mostrado na lista de jogadores."
+      },
+      "showuinotification": {
         "name": "Exibir Notificação de Interface",
-				"hint": "Uma notificação na interface será exibida."
-			},
-			"makeuinotificationpermanent": {
+        "hint": "Uma notificação na interface será exibida."
+      },
+      "makeuinotificationpermanent": {
         "name": "Notificação Permanente",
-				"hint": "Essa opção vai fazer com que a notificação seja permanente. Você vai precisar clicar nela para que ela suma."
-			},        
-			"showuinotificationonlytogm": {
+        "hint": "Essa opção vai fazer com que a notificação seja permanente. Você vai precisar clicar nela para que ela suma."
+      },
+      "showuinotificationonlytogm": {
         "name": "Notificação Apenas para Mestre",
-				"hint": "Isso vai fazer com que a notificação apareça apenas para mestres."
-			},         
-			"showuichatmessage": {
-				"name": "Mostrar Mensagem de Chat",
+        "hint": "Isso vai fazer com que a notificação apareça apenas para mestres."
+      },
+      "showuichatmessage": {
+        "name": "Mostrar Mensagem de Chat",
         "hint": "Uma mensagem de chat será exibida."
-			},
-			"showuichatmessageonlyforgm": {
-				"name": "Mensagem de Chat Apenas para GM",
+      },
+      "showuichatmessageonlyforgm": {
+        "name": "Mensagem de Chat Apenas para GM",
         "hint": "Uma mensagem de chat será exibida apenas para os mestres se essa opção for marcada."
-			},
-			"showimagechatmessage": {
-				"name": "Adicionar Imagem a Mensagem de Chat",
+      },
+      "showimagechatmessage": {
+        "name": "Adicionar Imagem a Mensagem de Chat",
         "hint": "Uma imagem será adicionada a mensagem de chat."
-			},
-			"chatimagepath": {
-				"name": "Endereço da Imagem do Chat/Diálogo",
+      },
+      "chatimagepath": {
+        "name": "Endereço da Imagem do Chat/Diálogo",
         "hint": "Você pode definir a imagem para a mensagem do chat/diálogo."
-			},
-			"chatimagewidth": {
-				"name": "Largura da Imagem do Chat",
+      },
+      "chatimagewidth": {
+        "name": "Largura da Imagem do Chat",
         "hint": "Você pode definir o tamanho da imagem do chat. Está em porcentagem (%)."
-			},
-			"chatmessageimageuserart": {
-				"name": "Trocar Imagem do Chat/Diálogo pelo Avatar do Jogador",
+      },
+      "chatmessageimageuserart": {
+        "name": "Trocar Imagem do Chat/Diálogo pelo Avatar do Jogador",
         "hint": "Isso vai usar o avatar do jogador no lugar de uma imagem padrão na mensagem de chat/dialogo."
-			},
-			"playsound": {
-				"name": "Tocar Som",
+      },
+      "playsound": {
+        "name": "Tocar Som",
         "hint": "Isso vai tocar um som."
-			},
+      },
       "playsoundgmonly": {
-          "name": "Som Apenas para Mestre",
-          "hint": "Marque essa caixa para o som ser tocado apenas para o mestre."
-      },         
-			"warningsoundpath": {
-				"name": "Endereço do Som",
+        "name": "Som Apenas para Mestre",
+        "hint": "Marque essa caixa para o som ser tocado apenas para o mestre."
+      },
+      "warningsoundpath": {
+        "name": "Endereço do Som",
         "hint": "Você pode colocar o endereço de um som que preferir."
-			},
-			"warningsoundvolume": {
-				"name": "Ajuste do Volume do Som",
+      },
+      "warningsoundvolume": {
+        "name": "Ajuste do Volume do Som",
         "hint": "Você pode definir o volume do som. Varia de 0,1 até 1. Isso representa porcentagem. Exemplo: 0.6 é 60% do volume."
-			},
-			"shakescreen": {
-				"name": "Sacudir a Tela",
-        "hint": "Isso vai tremer a tela. OBRIGATÓRIO TER O MÓDULO Fluid Canvas ATIVADO!"
-			},
+      },
       "showdialogmessage": {
         "name": "Exibir Diálogo",
         "hint": "Isso vai exibir uma caixa de diálogo com a imagem definida."
       },
       "xcard": {
-          "name": "X-Card",
-          "hint": "Marque isso para ativar a função de X-Card. ATENÇÃO: Isso vai recarregar o mundo."
-      },           
+        "name": "X-Card",
+        "hint": "Marque isso para ativar a função de X-Card. ATENÇÃO: Isso vai recarregar o mundo."
+      },
       "xcardgmonly": {
-          "name": "X-Card apenas para o Mestre",
-          "hint": "Isso vai fazer com o cartão de alerta seja exibido apenas para o mestre. Desmarque isso para que seja exibido para todos os jogadores."
+        "name": "X-Card apenas para o Mestre",
+        "hint": "Isso vai fazer com o cartão de alerta seja exibido apenas para o mestre. Desmarque isso para que seja exibido para todos os jogadores."
       },
       "xcardsound": {
-          "name": "Alarme para X-Card",
-          "hint": "Marque isso para que um som de alerta seja tocado quando o X-Card for ativado."
+        "name": "Alarme para X-Card",
+        "hint": "Marque isso para que um som de alerta seja tocado quando o X-Card for ativado."
       },
       "xcardsoundvolume": {
-          "name": "X-Card Volume do Som",
-          "hint": "Você pode definir o volume do som da X-Card. Varia de 0,1 até 1. Isso representa porcentagem. Exemplo: 0.6 é 60% do volume."
-      }      
-		}
+        "name": "X-Card Volume do Som",
+        "hint": "Você pode definir o volume do som da X-Card. Varia de 0,1 até 1. Isso representa porcentagem. Exemplo: 0.6 é 60% do volume."
+      }
+    }
   }
 }
-
-
-
-

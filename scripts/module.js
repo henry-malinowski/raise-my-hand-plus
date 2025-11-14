@@ -1,117 +1,137 @@
-const moduleName = 'raise-my-hand';
-import HandRaiser from "./HandRaiser.mjs";
+export const MODULE_ID = 'raise-my-hand';
+export let socket;
 
-Hooks.once("init", async function () {
-  // Hand
-  game.keybindings.register(moduleName, "raiseHand", {
+import * as HandRaiser from "./HandRaiser.mjs";
+
+Hooks.once("init", () => {
+  registerSettings();
+  registerKeybindings();
+});
+
+Hooks.on("getSceneControlButtons", registerTokenControls);
+Hooks.on("socketlib.ready", registerSocketCallbacks);
+
+/**
+ * Register the keybindings for the module.
+ * @returns {void}
+ */
+function registerKeybindings() {
+  game.keybindings.register(MODULE_ID, "raiseHand", {
     name: 'Raise Hand',
     hint: 'Toogle Raise Hand',
     editable: [{ key: "KeyH", modifiers: []}],
-    onDown: () => {
-      window.game.handRaiser.toggle();
-    },
-    onUp: () => {},
-    restricted: false,  // Restrict this Keybinding to gamemaster only?
-    reservedModifiers: [],
-    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
+    onDown: (context) => HandRaiser.raiseHand(),
+    reservedModifiers: []
   });
-  // X-Card
-  game.keybindings.register(moduleName, "xCard", {
-    name: 'X Card',
-    hint: 'This will open the X-Card.',
+
+  game.keybindings.register(MODULE_ID, "xCard", {
+    name: 'X-Card',
+    hint: 'This will display the X-Card.',
     editable: [{ key: "KeyX", modifiers: []}],
-    onDown: () => {
-      if ( game.settings.get("raise-my-hand", "xcard") ) {
-        window.game.handRaiser.showXCardDialogForEveryoneSocket();
+    onDown: (context) => {
+      if (game.settings.get(MODULE_ID, "xcard")) {
+        HandRaiser.showXCardDialog();
       }
     },
-    onUp: () => {},
-    restricted: false,  // Restrict this Keybinding to gamemaster only?
-    reservedModifiers: [],
-    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
+    reservedModifiers: []
   });  
-});
+}
 
-Hooks.once('init', function() {
-  let handRaiser = new HandRaiser();
-  window.game.handRaiser = handRaiser;
-  
-  game.settings.register(moduleName, "handToogleBehavior", {
-    name: game.i18n.localize("raise-my-hand.settings.handtooglebehavior.name"), // "Should a raised hand be displayed in the Players list?"
-    hint: game.i18n.localize("raise-my-hand.settings.handtooglebehavior.hint"), // "Should a raised hand be displayed in the Players list?"
+/**
+ * Register the settings for the module.
+ * @returns {void}
+ */
+function registerSettings() {
+  game.settings.register(MODULE_ID, "handToogleBehavior", {
+    name: "raise-my-hand.settings.handtooglebehavior.name", // "Should a raised hand be displayed in the Players list?"
+    hint: "raise-my-hand.settings.handtooglebehavior.hint", // "Should a raised hand be displayed in the Players list?"
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+    requiresReload: true
+  });
+
+  game.settings.register(MODULE_ID, 'notificationTimeout', {
+    name: "raise-my-hand.settings.notificationTimeout.name",
+    hint: "raise-my-hand.settings.notificationTimeout.hint",
+    scope: 'world',
+    config: true,
+    default: 10,
+    range: {
+      min: 0,
+      max: 60,
+      step: 1
+    },
+    type: Number
+  });
+
+  game.settings.register(MODULE_ID, "showEmojiIndicator", {
+    name: "raise-my-hand.settings.displayhand.name", // "Should a raised hand be displayed in the Players list?"
+    hint: "raise-my-hand.settings.displayhand.hint", // "Should a raised hand be displayed in the Players list?"
     scope: 'world',
     config: true,
     type: Boolean,
     default: true
   });
 
-  game.settings.register(moduleName, "showEmojiIndicator", {
-    name: game.i18n.localize("raise-my-hand.settings.displayhand.name"), // "Should a raised hand be displayed in the Players list?"
-    hint: game.i18n.localize("raise-my-hand.settings.displayhand.hint"), // "Should a raised hand be displayed in the Players list?"
-    scope: 'world',
-    config: true,
-    type: Boolean,
-    default: true
-  });
-
-  game.settings.register(moduleName, "showUiNotification", {
-    name: game.i18n.localize("raise-my-hand.settings.showuinotification.name"), // "Should a raised hand display a UI notification when raised?",
-    hint: game.i18n.localize("raise-my-hand.settings.showuinotification.hint"), // "Should a raised hand display a UI notification when raised?",    
+  game.settings.register(MODULE_ID, "showUiNotification", {
+    name: "raise-my-hand.settings.showuinotification.name", // "Should a raised hand display a UI notification when raised?",
+    hint: "raise-my-hand.settings.showuinotification.hint", // "Should a raised hand display a UI notification when raised?",    
     scope: 'world',
     config: true,
     type: Boolean,
     default: false
   });
 
-  game.settings.register(moduleName, "makeUiNotificationPermanent", {
-    name: game.i18n.localize("raise-my-hand.settings.makeuinotificationpermanent.name"), 
-    hint: game.i18n.localize("raise-my-hand.settings.makeuinotificationpermanent.hint"), 
+  game.settings.register(MODULE_ID, "makeUiNotificationPermanent", {
+    name: "raise-my-hand.settings.makeuinotificationpermanent.name", 
+    hint: "raise-my-hand.settings.makeuinotificationpermanent.hint", 
     scope: 'world',
     config: true,
     type: Boolean,
     default: false
   });
   
-  game.settings.register(moduleName, "showUiNotificationOnlyToGM", {
-    name: game.i18n.localize("raise-my-hand.settings.showuinotificationonlytogm.name"), 
-    hint: game.i18n.localize("raise-my-hand.settings.showuinotificationonlytogm.hint"), 
+  game.settings.register(MODULE_ID, "showUiNotificationOnlyToGM", {
+    name: "raise-my-hand.settings.showuinotificationonlytogm.name", 
+    hint: "raise-my-hand.settings.showuinotificationonlytogm.hint", 
     scope: 'world',
     config: true,
     type: Boolean,
     default: false
   });  
 
-  game.settings.register(moduleName, "showUiChatMessage", {
-    name: game.i18n.localize("raise-my-hand.settings.showuichatmessage.name"), // "Should a raised hand display a chat message when raised?"
-    hint: game.i18n.localize("raise-my-hand.settings.showuichatmessage.hint"), // "Should a raised hand display a chat message when raised?"
+  game.settings.register(MODULE_ID, "showUiChatMessage", {
+    name: "raise-my-hand.settings.showuichatmessage.name",
+    hint: "raise-my-hand.settings.showuichatmessage.hint",
     scope: 'world',
     config: true,
     type: Boolean,
     default: false
   });
 
-  game.settings.register(moduleName, "showUiChatMessageOnlyForGM", {
-    name: game.i18n.localize("raise-my-hand.settings.showuichatmessageonlyforgm.name"), // "Should a raised hand display a chat message when raised?"
-    hint: game.i18n.localize("raise-my-hand.settings.showuichatmessageonlyforgm.hint"), // "Should a raised hand display a chat message when raised?"
+  game.settings.register(MODULE_ID, "showUiChatMessageOnlyForGM", {
+    name: "raise-my-hand.settings.showuichatmessageonlyforgm.name",
+    hint: "raise-my-hand.settings.showuichatmessageonlyforgm.hint",
     scope: 'world',
     config: true,
     type: Boolean,
     default: false
   });
 
-  game.settings.register(moduleName, "showImageChatMessage", {
-    name: game.i18n.localize("raise-my-hand.settings.showimagechatmessage.name"), // "Should a image be displayed with the chat message?"
-    hint: game.i18n.localize("raise-my-hand.settings.showimagechatmessage.hint"), // "Should a image be displayed with the chat message?"
+  game.settings.register(MODULE_ID, "showImageChatMessage", {
+    name: "raise-my-hand.settings.showimagechatmessage.name",
+    hint: "raise-my-hand.settings.showimagechatmessage.hint",
     scope: 'world',
     config: true,
     type: Boolean,
     default: true
   });
   
-  // call this with: game.settings.get("raise-my-hand", "chatimagepath")
-  game.settings.register(moduleName, 'chatimagepath', {
-    name: game.i18n.localize("raise-my-hand.settings.chatimagepath.name"), // Chat Image Path
-    hint: game.i18n.localize("raise-my-hand.settings.chatimagepath.hint"), // "You can set a path to the image displayed on the chat."
+  game.settings.register(MODULE_ID, 'chatimagepath', {
+    name: "raise-my-hand.settings.chatimagepath.name",
+    hint: "raise-my-hand.settings.chatimagepath.hint",
     scope: 'world',
     config: true,
     default: 'modules/raise-my-hand/assets/hand.svg',
@@ -119,9 +139,9 @@ Hooks.once('init', function() {
     filePicker: 'imagevideo'
   }); 
   
-  game.settings.register(moduleName, 'chatimagewidth', {
-    name: game.i18n.localize("raise-my-hand.settings.chatimagewidth.name"), // 'Chat Image Width'
-    hint: game.i18n.localize("raise-my-hand.settings.chatimagewidth.hint"), // 'You can set the size of the custom image or player avatar. It is %'
+  game.settings.register(MODULE_ID, 'chatimagewidth', {
+    name: "raise-my-hand.settings.chatimagewidth.name",
+    hint: "raise-my-hand.settings.chatimagewidth.hint",
     scope: 'world',
     config: true,
     default: 100,
@@ -133,47 +153,45 @@ Hooks.once('init', function() {
     type: Number
   }); 
 
-  game.settings.register(moduleName, "chatMessageImageUserArt", {
-    name: game.i18n.localize("raise-my-hand.settings.chatmessageimageuserart.name"), // "Should chat image be the user avatar?"
-    hint: game.i18n.localize("raise-my-hand.settings.chatmessageimageuserart.name"), // 'This will use the user avatar as chat image instead of the default image.'
+  game.settings.register(MODULE_ID, "chatMessageImageUserArt", {
+    name: "raise-my-hand.settings.chatmessageimageuserart.name",
+    hint: "raise-my-hand.settings.chatmessageimageuserart.name",
     scope: 'world',
     config: true,
     type: Boolean,
     default: false
   });
   
-  // call this with: game.settings.get("raise-my-hand", "showDialogMessage")
-  game.settings.register(moduleName, "showDialogMessage", {
-    name: game.i18n.localize("raise-my-hand.settings.showdialogmessage.name"), // Show Dialog
-    hint: game.i18n.localize("raise-my-hand.settings.showdialogmessage.hint"), // This will show a dialog with the defined image.    
+  game.settings.register(MODULE_ID, "showDialogMessage", {
+    name: "raise-my-hand.settings.showdialogmessage.name",
+    hint: "raise-my-hand.settings.showdialogmessage.hint",
     scope: 'world',
     config: true,
     type: Boolean,
     default: false
   });
   
-  game.settings.register(moduleName, "playSound", {
-    name: game.i18n.localize("raise-my-hand.settings.playsound.name"), // "Should a sound be played when raised?"
-    hint: game.i18n.localize("raise-my-hand.settings.playsound.hint"), // 
+  game.settings.register(MODULE_ID, "playSound", {
+    name: "raise-my-hand.settings.playsound.name",
+    hint: "raise-my-hand.settings.playsound.hint",
     scope: 'world',
     config: true,
     type: Boolean,
     default: false
   });
 
-  game.settings.register(moduleName, "playSoundGMOnly", {
-    name: game.i18n.localize("raise-my-hand.settings.playsoundgmonly.name"), // "Should a sound be played when raised?"
-    hint: game.i18n.localize("raise-my-hand.settings.playsoundgmonly.hint"), // 
+  game.settings.register(MODULE_ID, "playSoundGMOnly", {
+    name: "raise-my-hand.settings.playsoundgmonly.name",
+    hint: "raise-my-hand.settings.playsoundgmonly.hint",
     scope: 'world',
     config: true,
     type: Boolean,
     default: false
   });
   
-  // call this with: game.settings.get("raise-my-hand", "warningsoundpath")
-  game.settings.register(moduleName, 'warningsoundpath', {
-    name: game.i18n.localize("raise-my-hand.settings.warningsoundpath.name"), // 'Warning Sound Path'
-    hint: game.i18n.localize("raise-my-hand.settings.warningsoundpath.hint"), // You can set a path to a sound you prefer.
+  game.settings.register(MODULE_ID, 'warningsoundpath', {
+    name: "raise-my-hand.settings.warningsoundpath.name",
+    hint: "raise-my-hand.settings.warningsoundpath.hint",
     scope: 'world',
     config: true,
     default: 'modules/raise-my-hand/assets/bell01.ogg',
@@ -181,10 +199,9 @@ Hooks.once('init', function() {
     filePicker: 'audio'
   });  
   
-  // call this with: game.settings.get("raise-my-hand", "warningsoundvolume")
-  game.settings.register(moduleName, 'warningsoundvolume', {
-    name: game.i18n.localize("raise-my-hand.settings.warningsoundvolume.name"), // "Warning Sound Volume"
-    hint: game.i18n.localize("raise-my-hand.settings.warningsoundvolume.hint"), // "You can set the volume for the warning sound. Use 0.1 for 10% of the volume. 0.6 for 60% of the volume."
+  game.settings.register(MODULE_ID, 'warningsoundvolume', {
+    name: "raise-my-hand.settings.warningsoundvolume.name",
+    hint: "raise-my-hand.settings.warningsoundvolume.hint",
     scope: 'world',
     config: true,
     default: 0.6,
@@ -196,39 +213,37 @@ Hooks.once('init', function() {
     type: Number
   });
 
-  // call this with: game.settings.get("raise-my-hand", "xcard")
-  game.settings.register(moduleName, "xcard", {
-    name: game.i18n.localize("raise-my-hand.settings.xcard.name"), // X-Card
-    hint: game.i18n.localize("raise-my-hand.settings.xcard.hint"), // Check this to turn on the X-Card feature. WARNING: The world will reload.
+  game.settings.register(MODULE_ID, "xcard", {
+    name: "raise-my-hand.settings.xcard.name",
+    hint: "raise-my-hand.settings.xcard.hint",
     scope: 'world',
     config: true,
     type: Boolean,
     default: false,
     requiresReload: true
-  });  
-  // call this with: game.settings.get("raise-my-hand", "xcardgmonly")
-  game.settings.register(moduleName, "xcardgmonly", {
-    name: game.i18n.localize("raise-my-hand.settings.xcardgmonly.name"), // Show X Card for GM Only
-    hint: game.i18n.localize("raise-my-hand.settings.xcardgmonly.hint"), // This will make the X-Card show just for the GM. If you uncheck this all connected clients will see it.
+  });
+
+  game.settings.register(MODULE_ID, "xcardgmonly", {
+    name: "raise-my-hand.settings.xcardgmonly.name",
+    hint: "raise-my-hand.settings.xcardgmonly.hint",
     scope: 'world',
     config: true,
     type: Boolean,
     default: false
   });
-  // call this with: game.settings.get("raise-my-hand", "xcardsound")
-  game.settings.register(moduleName, "xcardsound", {
-    name: game.i18n.localize("raise-my-hand.settings.xcardsound.name"), // "Should a sound be played when raised?"
-    hint: game.i18n.localize("raise-my-hand.settings.xcardsound.hint"), // 
+
+  game.settings.register(MODULE_ID, "xcardsound", {
+    name: "raise-my-hand.settings.xcardsound.name",
+    hint: "raise-my-hand.settings.xcardsound.hint",
     scope: 'world',
     config: true,
     type: Boolean,
     default: true
   });  
 
-  // call this with: game.settings.get("raise-my-hand", "xcardsoundvolume")
-  game.settings.register(moduleName, 'xcardsoundvolume', {
-    name: game.i18n.localize("raise-my-hand.settings.xcardsoundvolume.name"),
-    hint: game.i18n.localize("raise-my-hand.settings.xcardsoundvolume.hint"),
+  game.settings.register(MODULE_ID, 'xcardsoundvolume', {
+    name: "raise-my-hand.settings.xcardsoundvolume.name",
+    hint: "raise-my-hand.settings.xcardsoundvolume.hint",
     scope: 'world',
     config: true,
     default: 0.6,
@@ -236,65 +251,53 @@ Hooks.once('init', function() {
       min: 0.1,
       max: 1,
       step: 0.1
-    },     
+    },
     type: Number
-  });  
-
-/*
-  game.settings.register(moduleName, "shakescreen", {
-    name: game.i18n.localize("raise-my-hand.settings.shakescreen.name"), // "Shake Screen"
-    hint: game.i18n.localize("raise-my-hand.settings.shakescreen.hint"), // "Should a raised hand shake the screen? THIS REQUIRES THE MODULE Fluid Canvas"
-    scope: 'world',
-    config: true,
-    type: Boolean,
-    default: false
   });
-*/
-});
-/*
-Hooks.on("getSceneControlButtons", function(controls) {
-  let tileControls = controls.find(x => x.name === "token");
-  tileControls.tools.push({
-    icon: "fas fa-hand-paper",
-    name: "raise-my-hand",
-    title: "✋Raise My Hand",
-    button: true,
-    onClick: () => window.game.handRaiser.toggle(),
-    visible: true
-  });
-  
-  if ( game.settings.get("raise-my-hand", "xcard") ) {
-    tileControls.tools.push({
-      icon: "fas fa-times",
-      name: "x-card",
-      title: "X Card",
-      button: true,
-      onClick: () => window.game.handRaiser.showXCardDialogForEveryoneSocket(),
-      visible: game.settings.get("raise-my-hand", "xcard")
-    });  
-  }
+}
 
-});
-*/
+/**
+ * Register the token controls for the module.
+ * The hand raise/lower toggle is controlled by the "handToogleBehavior" setting.
+ * @param {Record<string, SceneControl>} controls - The SceneControl configurations.
+ * @returns {void}
+ */
+function registerTokenControls(controls) {
+  const tokenControlsTools = controls['tokens'].tools;
+  const toggles = game.settings.get(MODULE_ID, "handToogleBehavior");
 
-Hooks.on("getSceneControlButtons", function(controls) {
-  let tileControls = controls['tokens'];
-
-  tileControls.tools['raise-my-hand'] = {
-    icon: 'fas fa-hand-paper',
-    name: 'raise-my-hand',
+  tokenControlsTools['raise-hand'] = {
+    name: 'raise-hand',
     title: '✋Raise My Hand',
-    button: true,
-    onChange: () => window.game.handRaiser.toggle(),
+    icon: 'fas fa-hand-paper',
+    order: Object.keys(tokenControlsTools).length,
+    button: !toggles,
+    toggle: toggles,
     visible: true,
+    onChange: (event, active) => toggles ? HandRaiser.toggle(active) : HandRaiser.raiseHand(),
   };
 
-  tileControls.tools['x-card'] = {
-    icon: 'fas fa-times',
+  tokenControlsTools['x-card'] = {
     name: 'x-card',
     title: 'X-Card',
+    icon: 'fas fa-times',
+    order: Object.keys(tokenControlsTools).length,
     button: true,
-    onChange: () => window.game.handRaiser.showXCardDialogForEveryoneSocket(),
-    visible: game.settings.get("raise-my-hand", "xcard"),
+    visible: game.settings.get(MODULE_ID, "xcard"),
+    onChange: () => HandRaiser.showXCardDialog(),
   };
-});
+}
+
+/**
+ * Register the socket callbacks for the module.
+ * @returns {void}
+ */
+function registerSocketCallbacks() {
+  socket = socketlib.registerModule(MODULE_ID);
+  socket.register("createUiNotificationSocket", HandRaiser.createUiNotificationSocket);
+  socket.register("appendEmojiHandSocket", HandRaiser.appendEmojiHandSocket);
+  socket.register("removeEmojiHandSocket", HandRaiser.removeEmojiHandSocket);
+  socket.register("createHandPopupSocket", HandRaiser.createHandPopupSocket);
+  socket.register("closeHandPopupSocket", HandRaiser.closeHandPopupSocket);
+  socket.register("createXCardPopupSocket", HandRaiser.createXCardPopupSocket);
+}

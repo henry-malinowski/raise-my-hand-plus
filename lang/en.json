@@ -1,98 +1,98 @@
 {
-    "raise-my-hand": {
-        "UINOTIFICATION": " has their hand raised",
-        "CHATMESSAGE": "has their hand raised!",    
-        "kandashisfluidcanvas": "You need the Fluid Canvas Module!",    
-    
-        "settings": {
-            "handtooglebehavior": {
-                "name": "Work in Toggle Mode",
-                "hint": "When this is checked, the module will work in toggle mode, this means you need to trigger one time to request attention and then you need to trigger another time to drop the request. If you disable this, then every time you trigger the module, it will send a request for attention. The hand icon next to the player name will stop working."
-            },      
-            "displayhand": {
-                "name": "Show Hand on Players List",
-                "hint": "A hand icon will be displayed in the players list."
-            },
-            "showuinotification": {
-                "name": "Display UI Notification",
-                "hint": "A UI notification will be displayed for all players."
-            },
-            "makeuinotificationpermanent": {
-                "name": "Permanent UI Notification",
-                "hint": "This will make the notification permanent. You will need to click on it to dismiss it."
-            },      
-            "showuinotificationonlytogm": {
-                "name": "Notification Only For GM",
-                "hint": "This will make the notification show only for GM users."
-            },        
-            "showuichatmessage": {
-                "name": "Show Chat Message",
-                "hint": "A chat message will be displayed."
-            },
-            "showuichatmessageonlyforgm": {
-                "name": "Chat Message Only for GM",
-                "hint": "The chat message will be send only for GM users if you check this option."
-            },
-            "showimagechatmessage": {
-                "name": "Add Image to Chat Message",
-                "hint": "This will add an image to the chat message."
-            },
-            "chatimagepath": {
-                "name": "Image Path",
-                "hint": "You can set a path to the image displayed on the chat and dialog."
-            },
-            "chatimagewidth": {
-                "name": "Chat Image Width",
-                "hint": "You can set the size of the custom image or player avatar. It is %"
-            },
-            "chatmessageimageuserart": {
-                "name": "Replace Chat/Dialog Image with Player Avatar",
-                "hint": "This will use the user avatar image as chat/dialog image instead of the default image."
-            },
-            "playsound": {
-                "name": "Play Sound",
-                "hint": "This will play a default sound."
-            },
-            "playsoundgmonly": {
-                "name": "GM Only Sound",
-                "hint": "Check this to play the sound only for the GM."
-            },            
-            "warningsoundpath": {
-                "name": "Warning Sound Path",
-                "hint": "You can set a path to a sound you prefer."
-            },
-            "warningsoundvolume": {
-                "name": "Warning Sound Volume",
-                "hint": "You can set the volume for the warning sound. Use 0.1 for 10% of the volume. 0.6 for 60% of the volume."
-            },
-            "shakescreen": {
-                "name": "Shake Screen",
-                "hint": "This will shake the screen. THIS REQUIRES Fluid Canvas MODULE!"
-            },
-            "showdialogmessage": {
-                "name": "Show Dialog",
-                "hint": "This will show a dialog with the defined image."
-            },
-            "xcard": {
-                "name": "X-Card",
-                "hint": "Check this to turn on the X-Card feature. WARNING: The world will reload."
-            },            
-            "xcardgmonly": {
-                "name": "Show X Card for GM Only",
-                "hint": "This will make the X-Card show just for the GM. If you uncheck this all connected clients will see it."
-            },
-            "xcardsound": {
-                "name": "Play X-Card Alarm",
-                "hint": "Check this to play a sound if the X-Card is triggered."
-            },
-            "xcardsoundvolume": {
-                "name": "X-Card Sound Volume",
-                "hint": "You can set the volume for the X-Card sound. Use 0.1 for 10% of the volume. 0.6 for 60% of the volume."
-            }              
-        }
+  "raise-my-hand": {
+    "UINOTIFICATION": "✋ {name} has their hand raised",
+    "CHATMESSAGE": "has their hand raised!",
+    "ui":
+    {
+      "xcard": {
+        "title": "Stop!"
+      }
+    },
+    "settings": {
+      "handtooglebehavior": {
+        "name": "Work in Toggle Mode",
+        "hint": "When this is checked, the module will work in toggle mode, this means you need to trigger one time to request attention and then you need to trigger another time to drop the request. If you disable this, then every time you trigger the module, it will send a request for attention."
+      },      
+      "displayhand": {
+        "name": "Show Hand on Players List",
+        "hint": "A hand icon will be displayed in the players list."
+      },
+      "showuinotification": {
+        "name": "Display UI Notification",
+        "hint": "A UI notification will be displayed for all players."
+      },
+      "makeuinotificationpermanent": {
+        "name": "Permanent UI Notification",
+        "hint": "This will make the notification permanent. You will need to click on it to dismiss it."
+      },      
+      "showuinotificationonlytogm": {
+        "name": "Notification Only For GM",
+        "hint": "This will make the notification show only for GM users."
+      },        
+      "showuichatmessage": {
+        "name": "Show Chat Message",
+        "hint": "A chat message will be displayed."
+      },
+      "showuichatmessageonlyforgm": {
+        "name": "Chat Message Only for GM",
+        "hint": "The chat message will be send only for GM users if you check this option."
+      },
+      "showimagechatmessage": {
+        "name": "Add Image to Chat Message",
+        "hint": "This will add an image to the chat message."
+      },
+      "chatimagepath": {
+        "name": "Image Path",
+        "hint": "You can set a path to the image displayed on the chat and dialog."
+      },
+      "chatimagewidth": {
+        "name": "Chat Image Width",
+        "hint": "You can set the size of the custom image or player avatar. It is %"
+      },
+      "chatmessageimageuserart": {
+        "name": "Replace Chat/Dialog Image with Player Avatar",
+        "hint": "This will use the user avatar image as chat/dialog image instead of the default image."
+      },
+      "notificationTimeout": {
+        "name": "Notification Timeout",
+        "hint": "Prevent spam by adding a minimum time in seconds between raising hands or using the X-Card."
+      },
+      "playsound": {
+        "name": "Play Sound",
+        "hint": "This will play a default sound."
+      },
+      "playsoundgmonly": {
+        "name": "GM Only Sound",
+        "hint": "Check this to play the sound only for the GM."
+      },            
+      "warningsoundpath": {
+        "name": "Warning Sound Path",
+        "hint": "You can set a path to a sound you prefer."
+      },
+      "warningsoundvolume": {
+        "name": "Warning Sound Volume",
+        "hint": "You can set the volume for the warning sound. Use 0.1 for 10% of the volume. 0.6 for 60% of the volume."
+      },
+      "showdialogmessage": {
+        "name": "Show Dialog",
+        "hint": "This will show a dialog with the defined image."
+      },
+      "xcard": {
+        "name": "X-Card",
+        "hint": "Check this to turn on the X-Card feature. WARNING: The world will reload."
+      },            
+      "xcardgmonly": {
+        "name": "Show X Card for GM Only",
+        "hint": "This will make the X-Card show just for the GM. If you uncheck this all connected clients will see it."
+      },
+      "xcardsound": {
+        "name": "Play X-Card Alarm",
+        "hint": "Check this to play a sound if the X-Card is triggered."
+      },
+      "xcardsoundvolume": {
+        "name": "X-Card Sound Volume",
+        "hint": "You can set the volume for the X-Card sound. Use 0.1 for 10% of the volume. 0.6 for 60% of the volume."
+      }
     }
+  }
 }
-
-
-
-
