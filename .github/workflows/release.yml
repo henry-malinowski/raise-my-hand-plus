@@ -1,0 +1,108 @@
+# GitHub Actions workflow for creating module files when a release is published.
+#
+# This workflow runs automatically when a GitHub release is published.
+# It uses the battila7/get-version-action which reads from github.ref (the tag).
+
+name: Create Module Files For Release
+
+env:
+  # The URL used for the module's "Project URL" link on FoundryVTT's website.
+  project_url: "https://github.com/${{github.repository}}"
+
+  # The manifest URL for this specific release version.
+  # Each version should point to its own manifest file, not /latest/.
+  version_manifest_url: "https://github.com/${{github.repository}}/releases/download/${{ github.event.release.tag_name }}/module.json"
+
+  # The URL to the module archive associated with the module release being
+  # processed by this workflow.
+  release_module_url: "https://github.com/${{github.repository}}/releases/download/${{ github.event.release.tag_name }}/module.zip"
+
+
+on:
+  # Only run this workflow when a release is published.
+  release:
+    types: [published]
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      # Extract version embedded in the tag.
+      # This step expects the tag to be one of the following formats:
+      #   - "v<major>.<minor>.<patch>" (e.g., "v1.2.3")
+      #   - "<major>.<minor>.<patch>"  (e.g., "1.2.3")
+      #
+      # The version will be used by later steps to fill in the value for the
+      # "version" key required for a valid module manifest.
+      - name: Extract Version From Tag
+        id: get_version
+        uses: battila7/get-version-action@v2
+
+      # Modify "module.json" with values specific to the release.
+      # Since the values for the "version" and "url" keys aren't known ahead of
+      # time, the manifest file in the repository is updated with these values.
+      #
+      # While this does modify the manifest file in-place, the changes are not
+      # commited to the repository, and only exist in the action's filesystem.
+      - name: Modify Module Manifest With Release-Specific Values
+        id: sub_manifest_link_version
+        run: |
+          jq --arg version "${{steps.get_version.outputs.version-without-v}}" \
+             --arg url "${{ env.project_url }}" \
+             --arg manifest "${{ env.version_manifest_url }}" \
+             --arg download "${{ env.release_module_url }}" \
+             '.version = $version | .url = $url | .manifest = $manifest | .download = $download' \
+             module.json > module.json.tmp
+          mv module.json.tmp module.json
+
+      # Create a "module.zip" archive containing all the module's required files.
+      # If you have other directories or files that will need to be added to
+      # your packaged module, add them here.
+      - name: Create Module Archive
+        run: |
+          # Note that `zip` will only emit warnings when a file or directory
+          # doesn't exist, it will not fail.
+          zip                                    \
+            `# Options`                          \
+            --recurse-paths                      \
+            `# The name of the output file`     \
+             ./module.zip                        \
+            `# The files that will be included.` \
+            module.json                          \
+            README.md                            \
+            LICENSE                              \
+            templates                            \
+            scripts/                             \
+            styles/                              \
+            packs/                               \
+            language/                            \
+            lang/                                \
+            assets/
+          # Don't forget to add a backslash at the end of the line for any
+          # additional files or directories!
+
+      # Update the GitHub release with the manifest and module archive files.
+      - name: Update Release With Files
+        id: create_version_release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          name: ${{ github.event.release.name }}
+          draft: false
+          prerelease: ${{ github.event.release.prerelease }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: './module.json, ./module.zip'
+          tag: ${{ github.event.release.tag_name }}
+          body: ${{ github.event.release.body }}
+
