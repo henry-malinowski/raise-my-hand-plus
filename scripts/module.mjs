@@ -1,7 +1,8 @@
+import * as HandRaiser from "./HandRaiser.mjs";
+
 export const MODULE_ID = 'raise-my-hand';
 export let socket;
 
-import * as HandRaiser from "./HandRaiser.mjs";
 
 Hooks.once("init", () => {
   registerSettings();
@@ -18,7 +19,7 @@ Hooks.on("socketlib.ready", registerSocketCallbacks);
 function registerKeybindings() {
   game.keybindings.register(MODULE_ID, "raiseHand", {
     name: 'Raise Hand',
-    hint: 'Toogle Raise Hand',
+    hint: 'Toggle Raise Hand',
     editable: [{ key: "KeyH", modifiers: []}],
     onDown: (context) => HandRaiser.raiseHand(),
     reservedModifiers: []

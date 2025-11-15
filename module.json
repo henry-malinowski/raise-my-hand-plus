@@ -16,7 +16,7 @@
     "verified": "14.349"
   },
   "esmodules": [
-    "/scripts/module.js"
+    "/scripts/module.mjs"
   ],
   "styles": [
     "styles/styles.css"

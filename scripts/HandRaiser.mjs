@@ -1,5 +1,5 @@
 import NotificationPopup from "./NotificationPopup.mjs";
-import { socket, MODULE_ID } from "./module.js";
+import { socket, MODULE_ID } from "./module.mjs";
 
 /** @type {Object|null} Track single popup instance and user id that raised the hand */
 let handRaisedPopup = null;
@@ -68,7 +68,6 @@ async function playSoundWithReplacement(data, socketOptions=false) {
 
 /**
  * Toggle the hand raise/lower state.
- * @param {Event} event - The event that triggered the toggle.
  * @param {boolean} active - True if the hand should be raised, false if it should be lowered.
  * @returns {void}
  */
