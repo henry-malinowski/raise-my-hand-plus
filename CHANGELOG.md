@@ -1,3 +1,6 @@
+## 2.1.0
+- Added a setting to deploy the X-Card anonymous for tables that wish to use it. (feature requested in [issue #25](https://github.com/henry-malinowski/raise-my-hand-plus/issues/25))
+
 ## 2.0.0
 - Added a configurable timeout feature ([issue #21](https://github.com/henry-malinowski/raise-my-hand-plus/issues/21)). Default is 10 seconds.
 - Fixed sizing and duplication of popups relating to hand raising or X-Cards

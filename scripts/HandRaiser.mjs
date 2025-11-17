@@ -260,10 +260,11 @@ export async function closeHandPopupSocket(id) {
 
 /**
  * Create a popup with the X-card image and play the X-card sound if enabled.
+ * @param {string} id - The ID of the player who raised the X-card. If anonymous mode is enabled, the name will be empty.
  * @returns {void}
  */
 export async function createXCardPopupSocket(id) {
-  const name = game.users.get(id).name;
+  const name = getSetting("xcardAnonymousMode") ? "" : game.users.get(id).name;
 
   const popup = new NotificationPopup({
     classes: ["themed", "theme-dark"],

@@ -80,7 +80,11 @@
       "xcard": {
         "name": "X-Card",
         "hint": "Check this to turn on the X-Card feature. WARNING: The world will reload."
-      },            
+      },
+      "xcardAnonymousMode": {
+        "name": "X-Card Anonymous Mode",
+        "hint": "The X-Card will show without the triggering user's name."
+      },
       "xcardgmonly": {
         "name": "Show X Card for GM Only",
         "hint": "This will make the X-Card show just for the GM. If you uncheck this all connected clients will see it."

@@ -224,6 +224,16 @@ function registerSettings() {
     requiresReload: true
   });
 
+  game.settings.register(MODULE_ID, "xcardAnonymousMode", {
+    name: "raise-my-hand.settings.xcardAnonymousMode.name",
+    hint: "raise-my-hand.settings.xcardAnonymousMode.hint",
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false,
+    requiresReload: false
+  });
+
   game.settings.register(MODULE_ID, "xcardgmonly", {
     name: "raise-my-hand.settings.xcardgmonly.name",
     hint: "raise-my-hand.settings.xcardgmonly.hint",
