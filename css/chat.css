@@ -4,6 +4,8 @@
 .chat-message:has(.chat-hand) {
 
   /* Increase size to former size of the sender name */
+  /* @note this selector does not work in experimental releases of Foundry V14 
+  as message-sender is now a headersibling of the message-content div */
   .message-sender {
     font-size: var(--font-size-32);
     color: var(--color-warm-3);
