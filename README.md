@@ -16,14 +16,16 @@ This is implimented as a "raise hand" action or an X-Card popout if enabled.
 - Configurable FoundryVTT keybinding.
 
 ## Raise my Hand Buttons
-<div align="center">
-  <video width="45%" muted controls style="margin: 0 1%;">
-    <source src="github-assets/token-raise-hand.webm" type="video/webm">
-  </video>
-  <video width="45%" muted controls style="margin: 0 1%;">
-    <source src="github-assets/token-xcard.webm" type="video/webm">
-  </video>
-</div>
+<table align="center" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+    <td width="50%" style="border: none; padding: 0;">
+      <video width="100%" muted controls src="https://github.com/user-attachments/assets/1c40e757-19e6-4faf-9a5c-227ad1514d38"></video>
+    </td>
+    <td width="50%" style="border: none; padding: 0;">
+      <video width="100%" muted controls src="https://github.com/user-attachments/assets/fa4f9c66-08ec-4a2d-ab02-35704ad8efe3"></video>
+    </td>
+  </tr>
+</table>
 
 ## Main Settings
 <div align="center">
