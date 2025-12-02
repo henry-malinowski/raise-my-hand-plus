@@ -1,0 +1,22 @@
+/* Raise Hand settings button */
+button[data-key="raise-my-hand.handSettings"] i {
+  color: var(--raise-my-hand-yellow);
+  text-shadow: var(--raise-my-hand-icon-shadow);
+  font-size: 1.15em;
+}
+
+/* X-Card settings button */
+button[data-key="raise-my-hand.xCardSettings"] i {
+  color: var(--raise-my-hand-red);
+  text-shadow: var(--raise-my-hand-icon-shadow);
+  font-size: 1.6em;
+}
+
+/* Fix for multi-select vertical alignment in form groups. 
+ * This is a workaround for a bug in the Foundry VTT core where the vertical alignment
+ * of multi-select elements is not correct.
+ */
+#hand-settings-config .form-group:has(multi-select),
+#hand-settings-config .form-group:has(select[multiple]) {
+  align-items: flex-end;
+}

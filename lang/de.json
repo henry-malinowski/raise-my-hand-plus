@@ -1,68 +1,203 @@
 {
   "raise-my-hand": {
-    "UINOTIFICATION": "✋ {name} hat die Hand gehoben.",
+    "UINOTIFICATION": "✋ {name} hat die Hand gehoben",
     "CHATMESSAGE": "hat die Hand gehoben!",
+    "context": {
+      "lowerHand": "Hand senken"
+    },
     "ui": {
       "xcard": {
         "title": "Halt!"
       }
     },
+    "controls": {
+      "keybinding": {
+        "or": "oder"
+      },
+      "raise-hand": {
+        "name": "Hand heben",
+        "hint": "Gleicher Effekt wie das Klicken auf die Schaltfläche Hand heben.",
+        "toolclip": {
+          "heading": "Hand umschalten oder heben"
+        },
+        "toggle": {
+          "true": "Hand senken",
+          "false": "Hand heben"
+        }
+      },
+      "show-xcard": {
+        "name": "X-Karte zeigen",
+        "hint": "Dies zeigt die X-Karte an.",
+        "toolclip": {
+          "heading": "X-Karte zeigen"
+        }
+      }
+    },
     "settings": {
-      "handtooglebehavior": {
-        "name": "Toggle Modus",
-        "hint": "Wenn diese Option eingeschaltet ist, funktioniert das Modul im Toggle Modus, d.h. ein Klick auf das Hand-Zeichen hebt die Hand und ein weiterer Klick senkt sie wieder. Ist der Toggle Modus aus löst jeder Klick auf die Hand eine Notification aus."
+      "handSettings": {
+        "name": "Hand-Einstellungen",
+        "label": "Hand konfigurieren",
+        "hint": "Konfiguriere den Toggle-Modus, aktivierte Benachrichtigungsmodi und deren Untereinstellungen."
       },
-      "displayhand": {
-        "name": "Zeige das Handicon in der Spielerliste",
-        "hint": "Ein Handicon wird neben dem Namen in der Spielerliste angezeigt."
+      "xcard": {
+        "name": "X-Karten-Einstellungen",
+        "label": "X-Karte konfigurieren",
+        "hint": "Konfiguriere aktivierte Benachrichtigungsmodi der X-Karte und deren Untereinstellungen."
       },
-      "showuinotification": {
-        "name": "Zeige UI-Benachrichtigung",
-        "hint": "Eine UI-Benachrichtigung wird allen Spielern angezeigt."
+      "notificationTimeout": {
+        "name": "Abklingzeit",
+        "hint": "Mindestzeit (Sekunden) zwischen Verwendungen von Hand heben oder X-Karte pro Spieler."
       },
-      "makeuinotificationpermanent": {
-        "name": "Permanente UI-Benachrichtigung",
-        "hint": "Die Benachrichtigung wird angezeigt, bis sie aktiv weggeklickt wird."
+      "FIELDS": {
+        "choices": {
+          "disabled": "Deaktiviert",
+          "all": "Alle Benutzer",
+          "gm": "Nur SL"
+        }
       },
-      "showuinotificationonlytogm": {
-        "name": "UI-Benachrichtigung nur für DM",
-        "hint": "Zeigt die UI-Benachrichtigung nur dem DM."
+      "HAND": {
+        "FIELDS": {
+          "general": {
+            "label": "Allgemeine Einstellungen",
+            "isToggle": {
+              "label": "Toggle-Modus",
+              "hint": "Lässt das Handheben zwischen Heben und Senken umschalten. Ein Spieler, der seine Hand senkt, entfernt das Handsymbol aus der Liste und schließt das von ihm aktivierte Pop-out."
+            },
+            "notificationModes": {
+              "label": "Benachrichtigungsmodi",
+              "hint": "Lege die Benachrichtigungsmodi fest.",
+              "choices": {
+                "playerList": "Spielerlisten-Symbol",
+                "aural": "Akustische Benachrichtigung",
+                "popout": "Pop-out-Benachrichtigung",
+                "ui": "Oberflächen-Benachrichtigung",
+                "chat": "Chat-Benachrichtigung"
+              }
+            }
+          },
+          "playerList": {
+            "label": "Spielerlisten-Symbol",
+            "scope": {
+              "label": "Zeigen für",
+              "hint": "Lege fest, wer das Handsymbol in der Spielerliste sieht."
+            },
+            "holdTime": {
+              "label": "Haltezeit",
+              "hint": "Nicht-Toggle-Modus: Wie lange das Symbol nach Abschluss der Animation bleibt."
+            }
+          },
+          "aural": {
+            "label": "Akustische Benachrichtigung",
+            "scope": {
+              "label": "Abspielen für",
+              "hint": "Lege fest, wer den Ton hört."
+            },
+            "source": {
+              "label": "Benachrichtigungston",
+              "hint": "Wähle einen abzuspielenden Ton.",
+              "choices": {
+                "default": "Standard-Signalton",
+                "custom": "Eigener Ton"
+              }
+            },
+            "overridePath": {
+              "label": "Tonpfad",
+              "hint": "Lege einen Pfad zu einem bevorzugten Ton fest."
+            },
+            "soundVolume": {
+              "label": "Lautstärke",
+              "hint": "Lege die Lautstärke von 1-100% fest."
+            }
+          },
+          "popout": {
+            "label": "Pop-out-Benachrichtigung",
+            "scope": {
+              "label": "Zeigen für",
+              "hint": "Lege fest, wer die Pop-out-Benachrichtigung sieht."
+            },
+            "source": {
+              "label": "Pop-out-Bild",
+              "hint": "Wähle, welches Bild in der Pop-out-Benachrichtigung angezeigt wird.",
+              "choices": {
+                "default": "Standard-Hand",
+                "avatar": "Spieler-Avatar",
+                "custom": "Eigenes Bild"
+              }
+            },
+            "overridePath": {
+              "label": "Bildpfad",
+              "hint": "Lege einen Pfad zum im Pop-out angezeigten Bild fest."
+            }
+          },
+          "ui": {
+            "label": "Oberflächen-Benachrichtigung",
+            "scope": {
+              "label": "Senden an",
+              "hint": "Lege fest, wer die Oberflächen-Benachrichtigung sieht."
+            },
+            "permanent": {
+              "label": "Dauerhaft",
+              "hint": "Benachrichtigung bleibt, bis sie manuell geschlossen wird."
+            }
+          },
+          "chat": {
+            "label": "Chat-Benachrichtigung",
+            "scope": {
+              "label": "Senden an",
+              "hint": "Lege fest, wer die Chat-Nachricht sieht."
+            },
+            "source": {
+              "label": "Chat-Bild",
+              "hint": "Wähle, welches Bild in der Chat-Nachricht angezeigt wird.",
+              "choices": {
+                "disabled": "Keines",
+                "default": "Standard-Hand",
+                "avatar": "Spieler-Avatar",
+                "custom": "Eigenes Bild"
+              }
+            },
+            "overridePath": {
+              "label": "Bildpfad",
+              "hint": "Du kannst einen Pfad zum im Chat angezeigten Bild festlegen."
+            },
+            "widthPercentage": {
+              "label": "Bildbreite",
+              "hint": "Lege die Bildbreite von 1-100% fest."
+            }
+          }
+        }
       },
-      "showuichatmessage": {
-        "name": "Zeige eine Chatnachricht an",
-        "hint": "Eine Benachrichtigung wird im Chat ausgegeben."
-      },
-      "showuichatmessageonlyforgm": {
-        "name": "Chatnachricht nur für DM",
-        "hint": "Die Chatnachricht ist nur für den DM sichtbar."
-      },
-      "showimagechatmessage": {
-        "name": "Bild zur Chatnachricht",
-        "hint": "Zur Chatnachricht wird zusätzlich ein Bild angezeigt."
-      },
-      "chatimagepath": {
-        "name": "Pfad zum Bild",
-        "hint": "Gibt den Pfand an, zu dem Bild, das im Chat gezeigt werden soll."
-      },
-      "chatimagewidth": {
-        "name": "Anzeigebreite des Bildes",
-        "hint": "Gib in % an, wie gross das Bild angezeigt werden soll."
-      },
-      "chatmessageimageuserart": {
-        "name": "Bild mit Avatarbild ersetzen",
-        "hint": "Hierdurch wird das Bild durch das jeweilige Avatarbild ersetzt."
-      },
-      "playsound": {
-        "name": "Sound abspielen",
-        "hint": "Ein Audiosignal wird abgespielt."
-      },
-      "warningsoundpath": {
-        "name": "Pfad für das Audiosignal",
-        "hint": "Hier kannst du einen Pfad zu einem Audiosignal angeben."
-      },
-      "warningsoundvolume": {
-        "name": "Lautstärke des Audiosignals",
-        "hint": "Hier kannst du angeben, wie laut es abgespielt werden soll. 0.1 steht für 10% Lautstärke und 0.6 für 60%."
+      "XCARD": {
+        "FIELDS": {
+          "isEnabled": {
+            "label": "X-Karte aktivieren"
+          },
+          "scope": {
+            "label": "Senden an",
+            "hint": "Lege fest, wer X-Karten-Benachrichtigungen erhält."
+          },
+          "anonymousWarning": {
+            "label": "Anonyme Warnungen",
+            "hint": "Wenn aktiviert, zeigt die X-Karte nicht an, wer sie ausgelöst hat."
+          },
+          "source": {
+            "label": "Benachrichtigungston",
+            "hint": "Wähle einen abzuspielenden Ton.",
+            "choices": {
+              "none": "Deaktiviert",
+              "default": "Standard-Alarm",
+              "custom": "Eigener Ton"
+            }
+          },
+          "overridePath": {
+            "label": "Tonpfad",
+            "hint": "Lege einen Pfad zu einem bevorzugten Ton fest."
+          },
+          "soundVolume": {
+            "label": "Lautstärke",
+            "hint": "Lege die Lautstärke von 1-100% fest."
+          }
+        }
       }
     }
   }

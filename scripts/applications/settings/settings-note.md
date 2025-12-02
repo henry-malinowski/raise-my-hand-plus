@@ -1,0 +1,2 @@
+I readily acknowledge that `hand-config.mjs` and `xcard-config.mjs` are nearly identical and could be combined into a class that is extended to create the two different settings menus.
+I am choosing at this time to keep them seperate for the future possibly that they diverge and will need specific behavior causing the shared class to become cumbersome.

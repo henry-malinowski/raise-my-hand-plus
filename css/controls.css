@@ -1,0 +1,74 @@
+/* Raise Hand control button */
+button.control.tool[data-tool="raise-hand"] {
+  &::before {
+    color: var(--raise-my-hand-yellow);
+    font-size: 1.15em;
+    text-shadow: var(--raise-my-hand-icon-shadow);
+    transition: transform 0.2s ease-out;
+  }
+
+  &:hover::before {
+    transform: translateY(-0.125em);
+  }
+}
+
+/* X-Card control button */
+button.control.tool[data-tool="show-xcard"] {
+  position: relative;
+
+  &::before {
+    color: var(--raise-my-hand-red);
+    position: relative;
+    font-size: 1.6em;
+    /* Base size for the button */
+    text-shadow: var(--raise-my-hand-icon-shadow);
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-color: rgba(255, 0, 0, 1);
+    border-radius: inherit;
+    z-index: 0;
+    opacity: 0;
+  }
+
+  &:hover {
+    background: var(--control-bg-color);
+
+    &::before {
+      animation: raise-my-hand-xcard-pulse-size 1.25s ease-in-out infinite;
+    }
+
+    &::after {
+      animation: raise-my-hand-xcard-pulse-opacity 1.25s ease-in-out infinite;
+    }
+  }
+}
+
+/* X-Card pulsing font-size animation */
+@keyframes raise-my-hand-xcard-pulse-size {
+
+  0%,
+  100% {
+    font-size: 1.6em;
+  }
+
+  50% {
+    font-size: 2.0em;
+  }
+}
+
+/* X-Card pulsing opacity animation */
+@keyframes raise-my-hand-xcard-pulse-opacity {
+
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}

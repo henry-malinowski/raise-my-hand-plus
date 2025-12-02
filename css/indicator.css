@@ -1,0 +1,106 @@
+/* Hand emoji indicator in player list */
+.raise-my-hand-indicator {
+  /* Animation timing (can be overridden by JS via inline styles) */
+  --fade-duration: 0.2s;
+  --wave-duration: 1.75s;
+
+  margin-left: 0.4em;
+  color: var(--raise-my-hand-yellow);
+  font-size: 1.4em;
+  display: inline-block;
+  /* Lower the icon slightly to align with text */
+  vertical-align: -0.16em;
+  /* Move transform origin to the center of the palm area */
+  transform-origin: 56.5% 68.5%;
+
+  &::before {
+    content: var(--fa);
+    text-shadow: var(--raise-my-hand-icon-shadow);
+  }
+
+  /* Fade-in animation: grow from 50% size and fade in */
+  &.fade-in {
+    animation: raise-my-hand-fade-in var(--fade-duration) ease-out forwards;
+  }
+
+  /* Waving animation: starts after fade-in completes */
+  &.waving {
+    animation: raise-my-hand-wave var(--wave-duration) cubic-bezier(0.0, 0.725, 0.80, 1.0) var(--fade-duration);
+  }
+
+  /* Combined fade-in + waving: both animations run together with proper timing */
+  &.fade-in.waving {
+    animation: raise-my-hand-fade-in var(--fade-duration) ease-out forwards,
+      raise-my-hand-wave var(--wave-duration) cubic-bezier(0.0, 0.725, 0.80, 1.0) var(--fade-duration);
+  }
+
+  /* Fade-out animation: shrink to 50% size and fade out */
+  &.fade-out {
+    animation: raise-my-hand-fade-out var(--fade-duration) ease-in forwards;
+  }
+}
+
+/* Keyframe animations for raise-my-hand-indicator (prefixed to avoid conflicts) */
+@keyframes raise-my-hand-fade-in {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes raise-my-hand-fade-out {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  75% {
+    transform: scale(0.625) rotate(0deg);
+    opacity: 0.625;
+  }
+
+  100% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Waving animation (2.5 waves)*/
+@keyframes raise-my-hand-wave {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  12.5% {
+    transform: rotate(-35deg);
+    /* Counter-clockwise extreme */
+  }
+
+  37.5% {
+    transform: rotate(35deg);
+    /* Clockwise extreme */
+  }
+
+  62.5% {
+    transform: rotate(-35deg);
+    /* Second counter-clockwise extreme */
+  }
+
+  75% {
+    transform: rotate(0deg);
+  }
+
+  87.5% {
+    transform: rotate(35deg);
+    /* Second clockwise extreme */
+  }
+
+  100% {
+    transform: rotate(0deg);
+  }
+}

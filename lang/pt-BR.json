@@ -1,93 +1,203 @@
 {
   "raise-my-hand": {
-    "UINOTIFICATION": "✋ {name} está com a mão levantada.",
+    "UINOTIFICATION": "✋ {name} está com a mão levantada",
     "CHATMESSAGE": "está com a mão levantada!",
-    "ui":
-    {
+    "context": {
+      "lowerHand": "Baixar a Mão"
+    },
+    "ui": {
       "xcard": {
-        "title": "¡Para!"
+        "title": "Pare!"
+      }
+    },
+    "controls": {
+      "keybinding": {
+        "or": "ou"
+      },
+      "raise-hand": {
+        "name": "Levantar a Mão",
+        "hint": "Mesmo efeito de clicar no botão Levantar a Mão.",
+        "toolclip": {
+          "heading": "Alternar ou Levantar a Mão"
+        },
+        "toggle": {
+          "true": "Baixar a Mão",
+          "false": "Levantar a Mão"
+        }
+      },
+      "show-xcard": {
+        "name": "Mostrar Cartão-X",
+        "hint": "Isto irá exibir o Cartão-X.",
+        "toolclip": {
+          "heading": "Mostrar Cartão-X"
+        }
       }
     },
     "settings": {
-      "handtooglebehavior": {
-        "name": "Operar em Modo de Alternar",
-        "hint": "Quando isso estiver ativado o módulo vai trabalhar no modo de alternar, isso quer dizer que após chamar por atenção você precisa pedir novamente para tirar o pedido. Se essa caixa não estiver ativada toda vez que o módulo for ativado será enviado um pedido por atenção."
-      },
-      "displayhand": {
-        "name": "Mostrar Mão na Lista de Jogadores",
-        "hint": "Um ícone de mão será mostrado na lista de jogadores."
-      },
-      "showuinotification": {
-        "name": "Exibir Notificação de Interface",
-        "hint": "Uma notificação na interface será exibida."
-      },
-      "makeuinotificationpermanent": {
-        "name": "Notificação Permanente",
-        "hint": "Essa opção vai fazer com que a notificação seja permanente. Você vai precisar clicar nela para que ela suma."
-      },
-      "showuinotificationonlytogm": {
-        "name": "Notificação Apenas para Mestre",
-        "hint": "Isso vai fazer com que a notificação apareça apenas para mestres."
-      },
-      "showuichatmessage": {
-        "name": "Mostrar Mensagem de Chat",
-        "hint": "Uma mensagem de chat será exibida."
-      },
-      "showuichatmessageonlyforgm": {
-        "name": "Mensagem de Chat Apenas para GM",
-        "hint": "Uma mensagem de chat será exibida apenas para os mestres se essa opção for marcada."
-      },
-      "showimagechatmessage": {
-        "name": "Adicionar Imagem a Mensagem de Chat",
-        "hint": "Uma imagem será adicionada a mensagem de chat."
-      },
-      "chatimagepath": {
-        "name": "Endereço da Imagem do Chat/Diálogo",
-        "hint": "Você pode definir a imagem para a mensagem do chat/diálogo."
-      },
-      "chatimagewidth": {
-        "name": "Largura da Imagem do Chat",
-        "hint": "Você pode definir o tamanho da imagem do chat. Está em porcentagem (%)."
-      },
-      "chatmessageimageuserart": {
-        "name": "Trocar Imagem do Chat/Diálogo pelo Avatar do Jogador",
-        "hint": "Isso vai usar o avatar do jogador no lugar de uma imagem padrão na mensagem de chat/dialogo."
-      },
-      "playsound": {
-        "name": "Tocar Som",
-        "hint": "Isso vai tocar um som."
-      },
-      "playsoundgmonly": {
-        "name": "Som Apenas para Mestre",
-        "hint": "Marque essa caixa para o som ser tocado apenas para o mestre."
-      },
-      "warningsoundpath": {
-        "name": "Endereço do Som",
-        "hint": "Você pode colocar o endereço de um som que preferir."
-      },
-      "warningsoundvolume": {
-        "name": "Ajuste do Volume do Som",
-        "hint": "Você pode definir o volume do som. Varia de 0,1 até 1. Isso representa porcentagem. Exemplo: 0.6 é 60% do volume."
-      },
-      "showdialogmessage": {
-        "name": "Exibir Diálogo",
-        "hint": "Isso vai exibir uma caixa de diálogo com a imagem definida."
+      "handSettings": {
+        "name": "Configurações da Mão",
+        "label": "Configurar Mão",
+        "hint": "Configurar o modo de alternar da mão levantada, modos de notificação habilitados e suas subconfigurações."
       },
       "xcard": {
-        "name": "X-Card",
-        "hint": "Marque isso para ativar a função de X-Card. ATENÇÃO: Isso vai recarregar o mundo."
+        "name": "Configurações do Cartão-X",
+        "label": "Configurar Cartão-X",
+        "hint": "Configurar os modos de notificação habilitados do Cartão-X e suas subconfigurações."
       },
-      "xcardgmonly": {
-        "name": "X-Card apenas para o Mestre",
-        "hint": "Isso vai fazer com o cartão de alerta seja exibido apenas para o mestre. Desmarque isso para que seja exibido para todos os jogadores."
+      "notificationTimeout": {
+        "name": "Intervalo de Notificação",
+        "hint": "Tempo mínimo (em segundos) entre usos de Levantar a Mão ou Cartão-X por jogador."
       },
-      "xcardsound": {
-        "name": "Alarme para X-Card",
-        "hint": "Marque isso para que um som de alerta seja tocado quando o X-Card for ativado."
+      "FIELDS": {
+        "choices": {
+          "disabled": "Desabilitado",
+          "all": "Todos os Usuários",
+          "gm": "Apenas Mestres"
+        }
       },
-      "xcardsoundvolume": {
-        "name": "X-Card Volume do Som",
-        "hint": "Você pode definir o volume do som da X-Card. Varia de 0,1 até 1. Isso representa porcentagem. Exemplo: 0.6 é 60% do volume."
+      "HAND": {
+        "FIELDS": {
+          "general": {
+            "label": "Configurações Gerais",
+            "isToggle": {
+              "label": "Modo de Alternar",
+              "hint": "Faz o levantar de mão alternar entre os estados levantar e baixar. Um jogador baixando sua mão removerá o ícone da mão da lista e fechará o popout que ele ativou."
+            },
+            "notificationModes": {
+              "label": "Modos de Notificação",
+              "hint": "Configure os modos de notificação.",
+              "choices": {
+                "playerList": "Ícone na Lista de Jogadores",
+                "aural": "Notificação Sonora",
+                "popout": "Notificação em Popout",
+                "ui": "Notificação de Interface",
+                "chat": "Notificação de Chat"
+              }
+            }
+          },
+          "playerList": {
+            "label": "Ícone na Lista de Jogadores",
+            "scope": {
+              "label": "Mostrar para",
+              "hint": "Configure quem verá o ícone de mão na lista de jogadores."
+            },
+            "holdTime": {
+              "label": "Tempo de Espera",
+              "hint": "Modo não-alternar: Por quanto tempo o ícone permanece após a animação ser concluída."
+            }
+          },
+          "aural": {
+            "label": "Notificação Sonora",
+            "scope": {
+              "label": "Tocar para",
+              "hint": "Configure quem ouvirá o som."
+            },
+            "source": {
+              "label": "Som de Notificação",
+              "hint": "Escolha um som para tocar.",
+              "choices": {
+                "default": "Toque Padrão",
+                "custom": "Som Personalizado"
+              }
+            },
+            "overridePath": {
+              "label": "Caminho do Som",
+              "hint": "Defina um caminho para um som de sua preferência."
+            },
+            "soundVolume": {
+              "label": "Volume",
+              "hint": "Defina o volume de 1-100%."
+            }
+          },
+          "popout": {
+            "label": "Notificação em Popout",
+            "scope": {
+              "label": "Mostrar para",
+              "hint": "Configure quem verá a notificação em popout."
+            },
+            "source": {
+              "label": "Imagem do Popout",
+              "hint": "Escolha qual imagem exibir na notificação em popout.",
+              "choices": {
+                "default": "Mão Padrão",
+                "avatar": "Avatar do Jogador",
+                "custom": "Imagem Personalizada"
+              }
+            },
+            "overridePath": {
+              "label": "Caminho da Imagem",
+              "hint": "Defina um caminho para a imagem exibida no popout."
+            }
+          },
+          "ui": {
+            "label": "Notificação de Interface",
+            "scope": {
+              "label": "Enviar para",
+              "hint": "Configure quem verá a notificação de interface."
+            },
+            "permanent": {
+              "label": "Permanente",
+              "hint": "A notificação permanecerá até ser manualmente dispensada."
+            }
+          },
+          "chat": {
+            "label": "Notificação de Chat",
+            "scope": {
+              "label": "Enviar para",
+              "hint": "Configure quem verá a mensagem de chat."
+            },
+            "source": {
+              "label": "Imagem do Chat",
+              "hint": "Escolha qual imagem exibir na mensagem de chat.",
+              "choices": {
+                "disabled": "Nenhuma",
+                "default": "Mão Padrão",
+                "avatar": "Avatar do Jogador",
+                "custom": "Imagem Personalizada"
+              }
+            },
+            "overridePath": {
+              "label": "Caminho da Imagem",
+              "hint": "Você pode definir um caminho para a imagem exibida no chat."
+            },
+            "widthPercentage": {
+              "label": "Largura da Imagem",
+              "hint": "Defina a largura da imagem de 1-100%."
+            }
+          }
+        }
+      },
+      "XCARD": {
+        "FIELDS": {
+          "isEnabled": {
+            "label": "Habilitar Cartão-X"
+          },
+          "scope": {
+            "label": "Enviar para",
+            "hint": "Configure quem receberá notificações do Cartão-X."
+          },
+          "anonymousWarning": {
+            "label": "Avisos Anônimos",
+            "hint": "Se habilitado, o Cartão-X não mostrará quem o ativou."
+          },
+          "source": {
+            "label": "Som de Notificação",
+            "hint": "Escolha um som para tocar.",
+            "choices": {
+              "none": "Desabilitado",
+              "default": "Alarme Padrão",
+              "custom": "Som Personalizado"
+            }
+          },
+          "overridePath": {
+            "label": "Caminho do Som",
+            "hint": "Defina um caminho para um som de sua preferência."
+          },
+          "soundVolume": {
+            "label": "Volume",
+            "hint": "Defina o volume de 1-100%."
+          }
+        }
       }
     }
   }

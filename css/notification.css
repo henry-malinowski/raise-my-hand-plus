@@ -1,24 +1,20 @@
-:root {
-  --raise-my-hand-yellow: #ffd43b;
-  --raise-my-hand-red: #ff0000;
-}
-
-#raise-my-hand-notification-popup {
+#raise-my-hand-notification-popout {
   width: min(50vw, 50vh);
   height: calc(min(50vw, 50vh) + var(--header-height));
-  
+
+  /* Set colors for the popup header icons */
   header {
     i {
       &.fa-hand-paper {
         color: var(--raise-my-hand-yellow);
       }
-      
+
       &.fa-times {
         color: var(--raise-my-hand-red);
       }
     }
   }
-  
+
   section {
     overflow: hidden;
     padding: 0;
@@ -51,45 +47,4 @@
       text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
     }
   }
-}
-
-/* Chat message styling for hand raise */
-.raise-my-hand-msg {
-  h3 {
-    font-size: var(--font-size-28);
-    color: var(--color-warm-3);
-    margin: 0;
-  }
-
-  h4 {
-    font-size: var(--font-size-16);
-    margin: 0;
-  }
-
-  img {
-    vertical-align: middle;
-  }
-}
-
-/* Hand emoji indicator in player list */
-.raise-my-hand-indicator {
-  margin-left: 0.3em;
-  color: var(--raise-my-hand-yellow);
-  font-size: 1.1em;
-
-  &::before {
-    content: var(--fa);
-  }
-}
-
-/* Color the Raise My Hand icon yellow */
-button.control.tool[data-tool="raise-hand"] {
-  color: var(--raise-my-hand-yellow);
-  font-size: 1.15em;
-}
-
-/* Color the X-Card icon red */
-button.control.tool[data-tool="x-card"] {
-  color: var(--raise-my-hand-red);
-  font-size: 1.6em;
 }

@@ -1,0 +1,6 @@
+@import "variables.css" layer(variables);
+@import "notification.css" layer(applications);
+@import "settings.css" layer(applications);
+@import "chat.css" layer(applications);
+@import "indicator.css" layer(applications);
+@import "controls.css" layer(applications);
