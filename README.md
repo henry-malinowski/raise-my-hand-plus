@@ -19,10 +19,10 @@ This is implimented as a "raise hand" action or an X-Card popout if enabled.
 <table align="center" border="0" cellpadding="0" cellspacing="0">
   <tr>
     <td width="50%" style="border: none; padding: 0;">
-      <video width="100%" muted controls src="https://github.com/user-attachments/assets/1c40e757-19e6-4faf-9a5c-227ad1514d38"></video>
+      <video width="100%" muted controls src="https://github.com/user-attachments/assets/dd98d019-9398-43ee-8584-5d5b01e6fae7"></video>
     </td>
     <td width="50%" style="border: none; padding: 0;">
-      <video width="100%" muted controls src="https://github.com/user-attachments/assets/fa4f9c66-08ec-4a2d-ab02-35704ad8efe3"></video>
+      <video width="100%" muted controls src="https://github.com/user-attachments/assets/eeed545b-e31c-4693-b8b8-0fe77d598fc0"></video>
     </td>
   </tr>
 </table>
