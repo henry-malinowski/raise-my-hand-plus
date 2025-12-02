@@ -49,7 +49,7 @@
       {
         "id": "socketlib",
         "type": "module",
-        "manifest": "https://raw.githubusercontent.com/manuelVo/foundryvtt-socketlib/master/module.json"
+        "manifest": "https://github.com/farling42/foundryvtt-socketlib/releases/latest/download/module.json"
       }
     ]
   },
