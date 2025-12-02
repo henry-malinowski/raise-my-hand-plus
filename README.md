@@ -17,10 +17,10 @@ This is implimented as a "raise hand" action or an X-Card popout if enabled.
 
 ## Raise my Hand Buttons
 <div align="center">
-  <video width="45%" autoplay loop muted playsinline style="margin: 0 1%;">
+  <video width="45%" muted controls style="margin: 0 1%;">
     <source src="github-assets/token-raise-hand.webm" type="video/webm">
   </video>
-  <video width="45%" autoplay loop muted playsinline style="margin: 0 1%;">
+  <video width="45%" muted controls style="margin: 0 1%;">
     <source src="github-assets/token-xcard.webm" type="video/webm">
   </video>
 </div>
