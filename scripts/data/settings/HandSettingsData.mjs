@@ -43,12 +43,12 @@ export default class HandSettingsData extends DataModel {
         overridePath: new FilePathField({
           required: true,
           blank: true,
-          initial: "modules/raise-my-hand/assets/sounds/bell01.ogg",
+          initial: "",
           categories: ["AUDIO"]
         }),
         soundVolume: new NumberField({
           required: true,
-          initial: 60,
+          initial: 65,
           min: 1,
           max: 100,
           step: 1

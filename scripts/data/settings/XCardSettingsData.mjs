@@ -37,7 +37,7 @@ export default class XCardSettingsData extends DataModel {
       }),
       soundVolume: new NumberField({
         required: true,
-        initial: 60,
+        initial: 55,
         min: 1,
         max: 100,
         step: 1
