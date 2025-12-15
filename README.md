@@ -1,3 +1,6 @@
+![Foundry Version](https://img.shields.io/endpoint?url=https%3A%2F%2Ffoundryshields.com%2Fversion%3Fstyle%3Dflat-square%26url%3Dhttps%3A%2F%2Fraw.githubusercontent.com%2Fhenry-malinowski%2Fraise-my-hand-plus%2Frefs%2Fheads%2Fmain%2Fmodule.json)
+![GitHub License](https://img.shields.io/github/license/henry-malinowski/raise-my-hand-plus?style=flat-square&color=blue&link=https%3A%2F%2Fgithub.com%2Fhenry-malinowski%2Fraise-my-hand-plus%3Ftab%3DGPL-3.0-1-ov-file)
+
 # ✋ Raise My Hand
 This module impliments a simple and configurable way for a player to create a notification to the GM or all players at the table.
 This is implimented as a "raise hand" action or an X-Card popout if enabled.
