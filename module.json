@@ -10,16 +10,16 @@
       "flags": {}
     }
   ],  
-  "version": "2.1.0",
+  "version": "3.0.0",
   "compatibility": {
     "minimum": "13",
-    "verified": "14.349"
+    "verified": "14.352"
   },
   "esmodules": [
-    "/scripts/module.mjs"
+    "scripts/raise-my-hand.mjs"
   ],
   "styles": [
-    "styles/styles.css"
+    "css/raise-my-hand.css"
   ],
   "languages": [
     {
@@ -43,16 +43,16 @@
       "path": "lang/de.json"
     }
   ],
+  "socket": true,
   "relationships": {
     "requires": [
       {
         "id": "socketlib",
         "type": "module",
-        "manifest": "https://raw.githubusercontent.com/manuelVo/foundryvtt-socketlib/master/module.json"
+        "manifest": "https://github.com/farling42/foundryvtt-socketlib/releases/latest/download/module.json"
       }
     ]
   },
-  "socket": true,
   "readme": "https://github.com/henry-malinowski/raise-my-hand-plus/blob/main/README.md",
   "bugs": "https://github.com/henry-malinowski/raise-my-hand-plus/issues",
   "changelog": "https://github.com/henry-malinowski/raise-my-hand-plus/blob/main/CHANGELOG.md",

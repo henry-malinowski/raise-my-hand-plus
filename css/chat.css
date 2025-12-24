@@ -1,0 +1,26 @@
+/* Chat message styling for hand raise 
+ * @note font-family is not overridden to allow other system specific styles to apply 
+ */
+.chat-message:has(.chat-hand) {
+
+  /* Increase size to former size of the sender name */
+  /* @note this selector does not work in experimental releases of Foundry V14 
+  as message-sender is now a headersibling of the message-content div */
+  .message-sender {
+    font-size: var(--font-size-32);
+    color: var(--color-warm-3);
+  }
+
+  .chat-hand {
+    h4 {
+      font-size: var(--font-size-18);
+      margin: 0.5rem 0;
+    }
+
+    /* Center image */
+    img {
+      display: block;
+      margin: 0 auto;
+    }
+  }
+}

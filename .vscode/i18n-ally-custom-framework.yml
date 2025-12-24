@@ -1,6 +1,7 @@
 languageIds:
   - javascript
   - typescript
+  - handlebars
 
 # Match string literals starting with "raise-my-hand."
 usageMatchRegex:

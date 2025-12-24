@@ -1,0 +1,16 @@
+:root {
+  --raise-my-hand-yellow: #ffd43b;
+  --raise-my-hand-red: #ff0000;
+}
+
+/* Light mode overrides */
+body.theme-light,
+.themed.theme-light {
+  --raise-my-hand-icon-shadow: 0 0 0.16em black;
+}
+
+/* Dark mode overrides */
+body.theme-dark,
+.themed.theme-dark {
+  --raise-my-hand-icon-shadow: none;
+}

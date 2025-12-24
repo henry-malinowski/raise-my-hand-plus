@@ -1,0 +1,8 @@
+<div class="chat-hand">
+    <h4>{{localize "raise-my-hand.CHATMESSAGE"}}</h4>
+    {{#if (ne source "none")}}
+    <p><img src="
+    {{#if (eq source "custom")}} {{overridePath}} {{else if (eq source "avatar" )}} {{playerAvatar}} {{else}}
+            modules/raise-my-hand/assets/ui/hand.svg {{/if}} " width=" {{widthPercentage}}%"></p>
+    {{/if}}
+</div>

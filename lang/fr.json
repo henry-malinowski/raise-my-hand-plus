@@ -1,69 +1,203 @@
 {
   "raise-my-hand": {
-    "UINOTIFICATION": "✋ {name} a levé la main !",
-    "CHATMESSAGE": "a levé la main !",
-    "ui":
-    {
+    "UINOTIFICATION": "✋ {name} a levé la main !",
+    "CHATMESSAGE": "a levé la main !",
+    "context": {
+      "lowerHand": "Baisser la main"
+    },
+    "ui": {
       "xcard": {
-        "title": "Arrêter!"
+        "title": "Stop !"
+      }
+    },
+    "controls": {
+      "keybinding": {
+        "or": "ou"
+      },
+      "raise-hand": {
+        "name": "Lever la main",
+        "hint": "Identique au clic sur le bouton.",
+        "toolclip": {
+          "heading": "Lever/Baisser la main"
+        },
+        "toggle": {
+          "true": "Baisser la main",
+          "false": "Lever la main"
+        }
+      },
+      "show-xcard": {
+        "name": "Montrer la Carte-X",
+        "hint": "Affiche la Carte-X.",
+        "toolclip": {
+          "heading": "Montrer la Carte-X"
+        }
       }
     },
     "settings": {
-      "handtooglebehavior": {
-        "name": "Fonctionnement en bascule/bistable",
-        "hint": "Si cette option est activée, le module passe en mode bascule, c'est à dire que cliquer sur l'îcone Main lèvera la main, et recliquer dessus la baissera à nouveau. Si cette option est désactivée, chaque clic sur l'îcone Main enverra une notification."
+      "handSettings": {
+        "name": "Paramètres de la main",
+        "label": "Configurer la main",
+        "hint": "Configuration du mode bascule et des notifications."
       },
-      "displayhand": {
-        "name": "Afficher la main dans la liste des joueurs",
-        "hint": "Une icône de main sera affichée dans la liste des joueurs."
+      "xcard": {
+        "name": "Paramètres de la Carte-X",
+        "label": "Configurer la Carte-X",
+        "hint": "Configuration des notifications de la Carte-X."
       },
-      "showuinotification": {
-        "name": "Afficher une notification",
-        "hint": "Une notification sera affichée à tous les joueurs."
+      "notificationTimeout": {
+        "name": "Expiration de notification",
+        "hint": "Durée minimum (en secondes) entre chaque utilisation."
       },
-      "makeuinotificationpermanent": {
-        "name": "Notification permanente sur l'interface",
-        "hint": "Rend la notification permanente. Il faut cliquer dessus pour la désactiver."
+      "FIELDS": {
+        "choices": {
+          "disabled": "Désactivé",
+          "all": "Tous les utilisateurs",
+          "gm": "MJ uniquement"
+        }
       },
-      "showuinotificationonlytogm": {
-        "name": "Notification uniquement pour le MJ",
-        "hint": "N'affiche la notification que pour le MJ."
+      "HAND": {
+        "FIELDS": {
+          "general": {
+            "label": "Paramètres généraux",
+            "isToggle": {
+              "label": "Mode bascule",
+              "hint": "Active le mode bascule. Baisser la main retire l'icône et ferme la notification."
+            },
+            "notificationModes": {
+              "label": "Modes de notification",
+              "hint": "Sélectionner les types de notification.",
+              "choices": {
+                "playerList": "Icône liste des joueurs",
+                "aural": "Sonore",
+                "popout": "Popout",
+                "ui": "Interface",
+                "chat": "Tchat"
+              }
+            }
+          },
+          "playerList": {
+            "label": "Icône liste des joueurs",
+            "scope": {
+              "label": "Visible pour",
+              "hint": "Qui verra l'icône dans la liste des joueurs."
+            },
+            "holdTime": {
+              "label": "Durée d'affichage",
+              "hint": "Mode non-bascule : Durée d'affichage de l'icône."
+            }
+          },
+          "aural": {
+            "label": "Notification sonore",
+            "scope": {
+              "label": "Audible pour",
+              "hint": "Qui entendra le son."
+            },
+            "source": {
+              "label": "Son",
+              "hint": "Sélectionner un son.",
+              "choices": {
+                "default": "Carillon par défaut",
+                "custom": "Son personnalisé"
+              }
+            },
+            "overridePath": {
+              "label": "Fichier audio",
+              "hint": "Sélectionner un fichier audio."
+            },
+            "soundVolume": {
+              "label": "Volume",
+              "hint": "Régler le volume (1-100 %)."
+            }
+          },
+          "popout": {
+            "label": "Notification popout",
+            "scope": {
+              "label": "Visible pour",
+              "hint": "Qui verra le popout."
+            },
+            "source": {
+              "label": "Image",
+              "hint": "Sélectionner une image.",
+              "choices": {
+                "default": "Main par défaut",
+                "avatar": "Avatar",
+                "custom": "Image personnalisée"
+              }
+            },
+            "overridePath": {
+              "label": "Fichier image",
+              "hint": "Sélectionner un fichier image."
+            }
+          },
+          "ui": {
+            "label": "Notification d'interface",
+            "scope": {
+              "label": "Visible pour",
+              "hint": "Qui verra la notification."
+            },
+            "permanent": {
+              "label": "Permanente",
+              "hint": "Reste à l'écran jusqu'à fermeture."
+            }
+          },
+          "chat": {
+            "label": "Notification de chat",
+            "scope": {
+              "label": "Visible pour",
+              "hint": "Qui verra le message."
+            },
+            "source": {
+              "label": "Image",
+              "hint": "Sélectionner une image.",
+              "choices": {
+                "disabled": "Aucune",
+                "default": "Main par défaut",
+                "avatar": "Avatar",
+                "custom": "Image personnalisée"
+              }
+            },
+            "overridePath": {
+              "label": "Fichier image",
+              "hint": "Sélectionner un fichier image."
+            },
+            "widthPercentage": {
+              "label": "Largeur",
+              "hint": "Régler la largeur (1-100 %)."
+            }
+          }
+        }
       },
-      "showuichatmessage": {
-        "name": "Afficher un message dans le chat",
-        "hint": "Un message dans le chat sera affiché."
-      },
-      "showuichatmessageonlyforgm": {
-        "name": "Message dans le chat uniquement pour le MJ",
-        "hint": "Le message dans la chat ne sera visible que pour le MJ."
-      },
-      "showimagechatmessage": {
-        "name": "Ajouter une image au message dans le chat",
-        "hint": "Ceci ajoutera une image au message dans le chat."
-      },
-      "chatimagepath": {
-        "name": "Chemin de l'image dans le chat",
-        "hint": "Vous pouvez configurer l'image qui sera affichée dans le chat."
-      },
-      "chatimagewidth": {
-        "name": "Largeur de l'image dans le chat",
-        "hint": "Vous pouvez configurer la largeur de l'image ou de l'avatar qui sera affiché dans le chat (en %)."
-      },
-      "chatmessageimageuserart": {
-        "name": "Remplacer l'image avec l'avatar dans le chat",
-        "hint": "Ceci remplacera l'image avec l'avatar dans le chat."
-      },
-      "playsound": {
-        "name": "Lire un son",
-        "hint": "Ceci lira un son par défaut."
-      },
-      "warningsoundpath": {
-        "name": "Chemin du son",
-        "hint": "Vous pouvez configurer le son qui sera joué."
-      },
-      "warningsoundvolume": {
-        "name": "Volume du son",
-        "hint": "Vous pouvez configurer le volume du son. 0.1 pour 10 %. 0.6 pour 60%."
+      "XCARD": {
+        "FIELDS": {
+          "isEnabled": {
+            "label": "Activer la Carte-X"
+          },
+          "scope": {
+            "label": "Envoyer à",
+            "hint": "Définir qui recevra les notifications de Carte-X."
+          },
+          "anonymousWarning": {
+            "label": "Anonyme",
+            "hint": "Masque l'identité du déclencheur."
+          },
+          "source": {
+            "label": "Son",
+            "hint": "Sélectionner un son.",
+            "choices": {
+              "none": "Désactivé",
+              "default": "Alarme par défaut",
+              "custom": "Son personnalisé"
+            }
+          },
+          "overridePath": {
+            "label": "Fichier audio",
+            "hint": "Sélectionner un fichier audio."
+          },
+          "soundVolume": {
+            "label": "Volume",
+            "hint": "Régler le volume (1-100 %)."
+          }
+        }
       }
     }
   }
