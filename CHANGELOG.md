@@ -1,8 +1,8 @@
 ## 3.0.0
 ### General Changes
-- Migrated to esbuild bundling for improved load times. In spite of all the new features and upgrades, data sent to clients is smaller and now in a single-file, cutting down on successive HTTP requests.
+- Migrated to esbuild bundling for improved load times. In spite of all the new features and upgrades, data sent to clients in a single-file, cutting down on successive HTTP requests.
     - Source maps provided for debugging
-- Keybinding now route or psueodo-route through UI control handlers for consistant behavior (fixes [issue #26](https://github.com/henry-malinowski/raise-my-hand-plus/issues/26))
+- Keybinding now route or pseudo-route through UI control handlers for consistant behavior (fixes [issue #26](https://github.com/henry-malinowski/raise-my-hand-plus/issues/26))
 
 ### Overhauled Settings system
 - *Technical:* Settings are now stored in [`DataModels`](https://foundryvtt.com/api/classes/foundry.abstract.DataModel.html); reducing API calls to `game.setting.get` and enabling migration support if/when it's needed in the future
