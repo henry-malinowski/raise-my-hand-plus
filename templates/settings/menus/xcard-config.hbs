@@ -4,9 +4,7 @@
         {{formGroup fields.scope value=setting.scope localize=true}}
         {{formGroup fields.anonymousWarning value=setting.anonymousWarning localize=true}}
         {{formGroup fields.source value=setting.source localize=true}}
-        {{formGroup fields.overridePath value=setting.overridePath localize=true hidden=(ne setting.source
-        "custom")}}
-        {{formGroup fields.soundVolume value=setting.soundVolume localize=true hidden=(eq setting.source "none")
-        units="%"}}
+        {{formGroup fields.overridePath value=setting.overridePath localize=true hidden=(ne setting.source "custom")}}
+        {{formGroup fields.soundVolume value=setting.soundVolume localize=true hidden=(eq setting.source "none") units="%"}}
     </fieldset>
 </section>

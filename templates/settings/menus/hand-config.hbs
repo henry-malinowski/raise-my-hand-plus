@@ -1,58 +1,41 @@
 <section class="standard-form scrollable">
     <fieldset>
         <legend>{{localize "raise-my-hand.settings.HAND.FIELDS.general.label"}}</legend>
-        {{formGroup fields.general.fields.isToggle
-        value=(and setting.general.isToggle (or (setHas setting.general.notificationModes 'playerList') (setHas
-        setting.general.notificationModes 'popout')))
+        {{formGroup fields.general.fields.isToggle 
+        value=(and setting.general.isToggle (or (setHas setting.general.notificationModes 'playerList') (setHas setting.general.notificationModes 'popout')))
         localize=true
         hidden=(and (not (setHas setting.general.notificationModes 'playerList')) (not (setHas
         setting.general.notificationModes 'popout')))}}
-        {{formGroup fields.general.fields.notificationModes value=setting.general.notificationModes localize=true
-        widget="multi-select"}}
+        {{formGroup fields.general.fields.notificationModes value=setting.general.notificationModes localize=true widget="multi-select"}}
     </fieldset>
-    <fieldset style="{{#unless (setHas setting.general.notificationModes 'playerList')}}display: none;{{/unless}}"
-        {{disabled (not (setHas setting.general.notificationModes 'playerList' ))}}>
+    <fieldset style="{{#unless (setHas setting.general.notificationModes 'playerList')}}display: none;{{/unless}}" {{disabled (not (setHas setting.general.notificationModes 'playerList'))}}>
         <legend>{{localize "raise-my-hand.settings.HAND.FIELDS.playerList.label"}}</legend>
         {{formGroup fields.playerList.fields.scope value=setting.playerList.scope localize=true}}
-        {{formGroup fields.playerList.fields.holdTime value=setting.playerList.holdTime localize=true units="seconds"
-        hidden=setting.general.isToggle}}
+        {{formGroup fields.playerList.fields.holdTime value=setting.playerList.holdTime localize=true units="seconds" hidden=setting.general.isToggle}}
     </fieldset>
-    <fieldset style="{{#unless (setHas setting.general.notificationModes 'aural')}}display: none;{{/unless}}" {{disabled
-        (not (setHas setting.general.notificationModes 'aural' ))}}>
+    <fieldset style="{{#unless (setHas setting.general.notificationModes 'aural')}}display: none;{{/unless}}" {{disabled (not (setHas setting.general.notificationModes 'aural'))}}>
         <legend>{{localize "raise-my-hand.settings.HAND.FIELDS.aural.label"}}</legend>
         {{formGroup fields.aural.fields.scope value=setting.aural.scope localize=true}}
-        {{formGroup fields.aural.fields.source value=setting.aural.source
-        localize=true}}
-        {{formGroup fields.aural.fields.overridePath value=setting.aural.overridePath localize=true
-        hidden=(ne setting.aural.source "custom")}}
-        {{formGroup fields.aural.fields.soundVolume value=setting.aural.soundVolume
-        localize=true units="%"}}
+        {{formGroup fields.aural.fields.source value=setting.aural.source localize=true}}
+        {{formGroup fields.aural.fields.overridePath value=setting.aural.overridePath localize=true hidden=(ne setting.aural.source "custom")}}
+        {{formGroup fields.aural.fields.soundVolume value=setting.aural.soundVolume localize=true units="%"}}
     </fieldset>
-    <fieldset style="{{#unless (setHas setting.general.notificationModes 'popout')}}display: none;{{/unless}}"
-        {{disabled (not (setHas setting.general.notificationModes 'popout' ))}}>
+    <fieldset style="{{#unless (setHas setting.general.notificationModes 'popout')}}display: none;{{/unless}}" {{disabled (not (setHas setting.general.notificationModes 'popout'))}}>
         <legend>{{localize "raise-my-hand.settings.HAND.FIELDS.popout.label"}}</legend>
         {{formGroup fields.popout.fields.scope value=setting.popout.scope localize=true}}
-        {{formGroup fields.popout.fields.source value=setting.popout.source
-        localize=true}}
-        {{formGroup fields.popout.fields.overridePath
-        value=setting.popout.overridePath
-        localize=true hidden=(ne setting.popout.source "custom")}}
+        {{formGroup fields.popout.fields.source value=setting.popout.source localize=true}}
+        {{formGroup fields.popout.fields.overridePath value=setting.popout.overridePath localize=true hidden=(ne setting.popout.source "custom")}}
     </fieldset>
-    <fieldset style="{{#unless (setHas setting.general.notificationModes 'ui')}}display: none;{{/unless}}" {{disabled
-        (not (setHas setting.general.notificationModes 'ui' ))}}>
+    <fieldset style="{{#unless (setHas setting.general.notificationModes 'ui')}}display: none;{{/unless}}" {{disabled (not (setHas setting.general.notificationModes 'ui'))}}>
         <legend>{{localize "raise-my-hand.settings.HAND.FIELDS.ui.label"}}</legend>
         {{formGroup fields.ui.fields.scope value=setting.ui.scope localize=true}}
-        {{formGroup fields.ui.fields.permanent value=setting.ui.permanent localize=true
-        disabled=(eq setting.ui.scope "none")}}
+        {{formGroup fields.ui.fields.permanent value=setting.ui.permanent localize=true disabled=(eq setting.ui.scope "none")}}
     </fieldset>
-    <fieldset style="{{#unless (setHas setting.general.notificationModes 'chat')}}display: none;{{/unless}}" {{disabled
-        (not (setHas setting.general.notificationModes 'chat' ))}}>
+    <fieldset style="{{#unless (setHas setting.general.notificationModes 'chat')}}display: none;{{/unless}}" {{disabled (not (setHas setting.general.notificationModes 'chat'))}}>
         <legend>{{localize "raise-my-hand.settings.HAND.FIELDS.chat.label"}}</legend>
         {{formGroup fields.chat.fields.scope value=setting.chat.scope localize=true}}
         {{formGroup fields.chat.fields.source value=setting.chat.source localize=true}}
-        {{formGroup fields.chat.fields.overridePath value=setting.chat.overridePath
-        localize=true hidden=(ne setting.chat.source "custom")}}
-        {{formGroup fields.chat.fields.widthPercentage value=setting.chat.widthPercentage
-        localize=true hidden=(eq setting.chat.source "none") units="%"}}
+        {{formGroup fields.chat.fields.overridePath value=setting.chat.overridePath localize=true hidden=(ne setting.chat.source "custom")}}
+        {{formGroup fields.chat.fields.widthPercentage value=setting.chat.widthPercentage localize=true hidden=(eq setting.chat.source "none") units="%"}}
     </fieldset>
 </section>
