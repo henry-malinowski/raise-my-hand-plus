@@ -1,14 +1,14 @@
 ## 3.0.0
 ### General Changes
-- Migrated to esbuild bundling for improved load times. In spite of all the new features and upgrades, data sent to clients in a single-file, cutting down on successive HTTP requests.
+- Migrated to esbuild bundling for improved load times by cutting down on successive HTTP requests.
     - Source maps provided for debugging
 - Keybinding now route or pseudo-route through UI control handlers for consistant behavior (fixes [issue #26](https://github.com/henry-malinowski/raise-my-hand-plus/issues/26))
 
 ### Overhauled Settings system
-- *Technical:* Settings are now stored in [`DataModels`](https://foundryvtt.com/api/classes/foundry.abstract.DataModel.html); reducing API calls to `game.setting.get` and enabling migration support if/when it's needed in the future
-- Rich popout menus for settings that are progressively discovered; only show currently relevant settings. 
+- *Technical:* Settings are now stored in [`DataModels`](https://foundryvtt.com/api/classes/foundry.abstract.DataModel.html); reducing API calls to `game.setting.get` and enabling better migration support if/when it's needed in the future
+- Rich popout menus for settings that are progressively discovered; only showing currently relevant settings. 
 - Generally more customization is possible without additional cognitive load.
-- Changing Hand or X-Card settings no longer requires reloading Foundry. Hooray! 🥳
+- Changing Hand or X-Card settings no longer requires reloading Foundry. *Hooray!* 🥳
 - Settings now have a "Reset \[to defaults\]" button
 
 ### Notification Changes
@@ -36,9 +36,9 @@
 ## 2.0.0
 - Added a configurable timeout feature ([issue #21](https://github.com/henry-malinowski/raise-my-hand-plus/issues/21)). Default is 10 seconds.
 - Fixed sizing and duplication of popups relating to hand raising or X-Cards
-- Suppressed erronious pop-out of this module's ApplicationV2 classs in Foundry V14
+- Suppressed erronious pop-out of this module's notification-popout class in Foundry V14
 - Replaced `xcard.webp` with a new SVG to improve initial load time
-- XCard now shows name of the user raising the card
+- XCard now shows name of the user raising the card in accordance with John Stavropoulos seminal document
 - Suppressed multiple sounds playing from module when multiple prompted, only the most recent notification plays
 - The raise-my-hand button configures as a proper toggle when set as such 
 - The toggle is also suppress by the timeout feature
