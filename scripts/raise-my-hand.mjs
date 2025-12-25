@@ -1,4 +1,7 @@
-// Export MODULE_ID for use throughout the module
+/**
+ * The module ID used for FoundryVTT module registration and settings.
+ * @type {string}
+ */
 export const MODULE_ID = 'raise-my-hand';
 
 import { default as HandConfig } from "./applications/settings/hand-config.mjs";
@@ -10,6 +13,12 @@ import { clearPlayerListIcons } from "./socket/handlers.mjs";
 import { registerTokenControls, getLowerHandContextOptions } from "./controls.mjs";
 import { registerHandlebarsHelpers } from "./applications/handlebars.mjs";
 
+/**
+ * The current settings era version for migration tracking.
+ * Incremented when breaking changes require settings migration.
+ * @type {string}
+ * @private
+ */
 const CURRENT_ERA = "2";
 
 // Init hooks
@@ -23,7 +32,8 @@ Hooks.on("getSceneControlButtons", registerTokenControls); // register the token
 Hooks.on("clientSettingChanged", clientSettingChanged); // update the controls toolclip when keybindings are changed
 
 /**
- * Initialize the module
+ * Initialize the module.
+ * Called during the 'init' hook to register handlebars helpers, settings, and keybindings.
  * @returns {void}
  */
 function init() {
@@ -33,7 +43,12 @@ function init() {
 }
 
 /**
- * Register the settings for the module.
+ * Register all module settings with FoundryVTT.
+ * Registers both visible settings (notificationTimeout) and hidden settings objects
+ * (handSettings, xCardSettings) that are configured via dedicated menu dialogs.
+ * Also registers the internal 'settings-era' setting for migration tracking.
+ * @see {@link https://foundryvtt.com/api/classes/foundry.helpers.ClientSettings.html#register ClientSettings.register}
+ * @see {@link https://foundryvtt.com/api/interfaces/foundry.types.SettingConfig.html SettingConfig}
  * @returns {void}
  */
 function registerSettings() {
@@ -117,7 +132,8 @@ function registerSettings() {
 }
 
 /**
- * Register the keybindings for the module.
+ * Register keybindings for the module.
+ * Registers "raise-hand" (default: H) and "show-xcard" (default: X) keybindings.
  * @returns {void}
  */
 function registerKeybindings() {
@@ -156,7 +172,8 @@ function registerKeybindings() {
 }
 
 /**
- * Perform migration of settings if needed
+ * Perform migration of settings if needed.
+ * Called during the 'ready' hook. Checks the settings-era and migrates if necessary.
  * @returns {Promise<void>}
  */
 async function ready() {
@@ -171,8 +188,10 @@ async function ready() {
 }
 
 /**
- * Migrate old settings values to new format
- * Runs in ready hook as a single serial process
+ * Migrate old settings values to new format.
+ * Converts legacy flat settings structure to the new DataModel-based structure.
+ * Maps old boolean and string settings to the new HandSettingsData and XCardSettingsData schemas.
+ * Runs in ready hook as a single serial process.
  * @returns {Promise<void>}
  */
 async function migrateSettings() {
@@ -203,11 +222,11 @@ async function migrateSettings() {
   // Map old settings to new schema structure for Hand Settings
   const handData = {
     general: {
-      isToggle: oldSettings.handToogleBehavior,
+      isToggle: oldSettings.handToogleBehavior ?? true,
       notificationModes: new Set([
         (oldSettings.showEmojiIndicator ?? true) && "playerList",
         oldSettings.showDialogMessage && "popout",
-        oldSettings.playSound && "aural",
+        (oldSettings.playSound ?? true) && "aural",
         oldSettings.showUiNotification && "ui",
         oldSettings.showUiChatMessage && "chat"
       ].filter(m => m))
@@ -219,33 +238,33 @@ async function migrateSettings() {
     aural: {
       scope: oldSettings.playSoundGMOnly ? "gm-only" : "all-players",
       // if path was not the default, set source to custom
-      source: oldSettings.warningsoundpath !== "modules/raise-my-hand/assets/bell01.ogg" ? "custom" : "default", // new setting
-      overridePath: oldSettings.warningsoundpath === "modules/raise-my-hand/assets/bell01.ogg" ? "" : oldSettings.warningsoundpath, // new setting, default is empty string, else the custom path
+      source: (oldSettings.warningsoundpath && oldSettings.warningsoundpath !== "modules/raise-my-hand/assets/bell01.ogg") ? "custom" : "default", // new setting
+      overridePath: (oldSettings.warningsoundpath && oldSettings.warningsoundpath !== "modules/raise-my-hand/assets/bell01.ogg") ? oldSettings.warningsoundpath : "", // new setting, default is empty string, else the custom path
       soundVolume: Math.max(1, Math.round((oldSettings.warningsoundvolume ?? 0.65) * 100))  // Convert to percentage, min 1%, default 65%
     },
     popout: {
       scope: "all-players",
       source: (!oldSettings.showImageChatMessage) ? "default" : (oldSettings.chatMessageImageUserArt ? "avatar" : "custom"),
-      overridePath: oldSettings.chatimagepath
+      overridePath: oldSettings.chatimagepath ?? ""
     },
     ui: {
       scope: oldSettings.showUiNotificationOnlyToGM ? "gm-only" : "all-players",
-      permanent: oldSettings.makeUiNotificationPermanent
+      permanent: oldSettings.makeUiNotificationPermanent ?? false
     },
     chat: {
       scope: oldSettings.showUiChatMessageOnlyForGM ? "gm-only" : "all-players",
       source: (!oldSettings.showImageChatMessage) ? 
         "none" : (oldSettings.chatMessageImageUserArt ? "avatar" : "custom"),
-      overridePath: oldSettings.chatimagepath === "modules/raise-my-hand/assets/hand.svg" ? "" : oldSettings.chatimagepath,
-      widthPercentage: oldSettings.chatimagewidth
+      overridePath: (oldSettings.chatimagepath && oldSettings.chatimagepath !== "modules/raise-my-hand/assets/hand.svg") ? oldSettings.chatimagepath : "",
+      widthPercentage: oldSettings.chatimagewidth ?? 85
     }
   };
 
   // Map old settings to new schema structure for X-Card Settings
   const xCardData = {
-    isEnabled: oldSettings.xcard,
+    isEnabled: oldSettings.xcard ?? false,
     scope: oldSettings.xcardgmonly ? "gm-only" : "all-players",
-    anonymousWarning: oldSettings.xcardAnonymousMode,
+    anonymousWarning: oldSettings.xcardAnonymousMode ?? false,
     source: oldSettings.xcardsound ? "default" : "none",
     soundVolume: Math.max(1, Math.round((oldSettings.xcardsoundvolume ?? 0.55) * 100))  // Convert to percentage, min 1%, default 55%
   };
@@ -265,10 +284,11 @@ async function migrateSettings() {
 }
 
 /**
- * Update controls toolclip when keybindings are changed
- * @param {string}  setting The setting that changed
- * @param {*}       value The desired setting value
- * @param {object}  options Additional options passed as part of the setting change request
+ * Update controls toolclip when keybindings are changed.
+ * Called when client settings change. Re-renders controls if keybindings for this module were modified.
+ * @param {string} setting - The setting that changed
+ * @param {*} value - The desired setting value
+ * @param {object} options - Additional options passed as part of the setting change request
  * @returns {void}
  */
 function clientSettingChanged(setting, value, options) {
