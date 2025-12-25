@@ -6,11 +6,39 @@ import ScopeField from "./ScopeField.mjs";
  * DataModel for hand raising settings.
  * Provides schema validation, migration, and structured data access.
  *
- * @property {Object} general
- * @property {string} chat.overridePath
- * @property {number} chat.widthPercentage
+ * @extends {foundry.abstract.DataModel}
+ * @see {@link https://foundryvtt.com/api/classes/foundry.abstract.DataModel.html DataModel}
+ *
+ * @property {Object} general - General hand raising settings
+ * @property {boolean} general.isToggle - Whether hand raising is a toggle (true) or button (false)
+ * @property {Set<string>} general.notificationModes - Set of enabled notification modes: "playerList", "aural", "popout", "ui", "chat"
+ * @property {Object} playerList - Player list icon settings
+ * @property {"gm-only"|"all-players"} playerList.scope - Who sees the player list icon
+ * @property {number} playerList.holdTime - How long to hold the icon in non-toggle mode (0-60 seconds)
+ * @property {Object} aural - Sound notification settings
+ * @property {"gm-only"|"all-players"} aural.scope - Who hears the sound
+ * @property {"default"|"custom"} aural.source - Sound source type
+ * @property {string} aural.overridePath - Custom sound file path (if source is "custom")
+ * @property {number} aural.soundVolume - Sound volume percentage (1-100)
+ * @property {Object} popout - Popout notification settings
+ * @property {"gm-only"|"all-players"} popout.scope - Who sees the popout
+ * @property {"default"|"avatar"|"custom"} popout.source - Image source type
+ * @property {string} popout.overridePath - Custom image file path (if source is "custom")
+ * @property {Object} ui - UI notification settings
+ * @property {"gm-only"|"all-players"} ui.scope - Who sees the UI notification
+ * @property {boolean} ui.permanent - Whether the notification is permanent
+ * @property {Object} chat - Chat message settings
+ * @property {"gm-only"|"all-players"} chat.scope - Who sees the chat message
+ * @property {"none"|"default"|"avatar"|"custom"} chat.source - Image source type
+ * @property {string} chat.overridePath - Custom image file path (if source is "custom")
+ * @property {number} chat.widthPercentage - Image width percentage in chat (1-100)
  */
 export default class HandSettingsData extends DataModel {
+  /**
+   * Define the schema for hand settings.
+   * @returns {Object} The schema definition
+   * @protected
+   */
   static defineSchema() {
     return {
       general: new SchemaField({
@@ -23,7 +51,7 @@ export default class HandSettingsData extends DataModel {
             "ui": "raise-my-hand.settings.HAND.FIELDS.general.notificationModes.choices.ui",
             "chat": "raise-my-hand.settings.HAND.FIELDS.general.notificationModes.choices.chat"
           }
-        }), {initial: ["playerList"]})
+        }), {initial: ["playerList", "aural"]})
       }),
       playerList: new SchemaField({
         scope: new ScopeField(),
@@ -107,6 +135,10 @@ export default class HandSettingsData extends DataModel {
     };
   }
 
+  /**
+   * Localization prefixes for this DataModel.
+   * @type {string[]}
+   */
   static LOCALIZATION_PREFIXES = ["raise-my-hand.settings.HAND"];
 
   /**

@@ -6,14 +6,22 @@ import ScopeField from "./ScopeField.mjs";
  * DataModel for X-Card settings.
  * Provides schema validation, migration, and structured data access.
  *
- * @property {boolean} isEnabled
- * @property {"gm-only"|"all-players"} scope
- * @property {boolean} anonymousWarning
- * @property {"none"|"default"|"custom"} source
- * @property {string} overridePath
- * @property {number} soundVolume
+ * @extends {foundry.abstract.DataModel}
+ * @see {@link https://foundryvtt.com/api/classes/foundry.abstract.DataModel.html DataModel}
+ *
+ * @property {boolean} isEnabled - Whether X-Card functionality is enabled
+ * @property {"gm-only"|"all-players"} scope - Who receives X-Card notifications
+ * @property {boolean} anonymousWarning - Whether to hide the player's name in X-Card notifications
+ * @property {"none"|"default"|"custom"} source - Sound source type ("none" disables sound)
+ * @property {string} overridePath - Custom sound file path (if source is "custom")
+ * @property {number} soundVolume - Sound volume percentage (1-100)
  */
 export default class XCardSettingsData extends DataModel {
+  /**
+   * Define the schema for X-Card settings.
+   * @returns {Object} The schema definition
+   * @protected
+   */
   static defineSchema() {
     return {
       isEnabled: new BooleanField({required: true, initial: false}),
@@ -45,6 +53,10 @@ export default class XCardSettingsData extends DataModel {
     };
   }
 
+  /**
+   * Localization prefixes for this DataModel.
+   * @type {string[]}
+   */
   static LOCALIZATION_PREFIXES = ["raise-my-hand.settings.XCARD"];
 
   /**

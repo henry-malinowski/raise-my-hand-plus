@@ -14,7 +14,7 @@ const { renderTemplate } = foundry.applications.handlebars;
 export function toggle(active) {
   // If trying to raise hand, check timeout first
   if (active && !timeoutPassed()) {
-    // forcably deassert the control and return
+    // forcibly deassert the control and return
     ui.controls.controls["tokens"].tools["raise-hand"].active = false;
     ui.controls.render();
     return;
@@ -25,6 +25,11 @@ export function toggle(active) {
   ui.controls.render();
 }
 
+/**
+ * Raise the hand and trigger all enabled notification modes.
+ * Checks timeout to prevent spam, then executes all enabled notification handlers (playerList, ui, chat, popout, aural) in parallel.
+ * @returns {Promise<void>}
+ */
 export async function raise() {
   // Check timeout to prevent spam and update timestamp
   if (!checkAndUpdateTimeout()) return;
@@ -51,6 +56,11 @@ export async function raise() {
       createUiNotification, player.name, isPermanent);
   };
 
+  /**
+   * Show a chat notification with the player's name and optional image.
+   * @returns {Promise<void>}
+   * @see {@link https://foundryvtt.com/api/classes/foundry.documents.ChatMessage.html ChatMessage}
+   */
   const showChatNotification = async () => {
     // Build template data object
     const templateData = {

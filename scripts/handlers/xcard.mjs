@@ -5,6 +5,8 @@ import { createXCardPopout } from "../socket/handlers.mjs";
 
 /**
  * Show the X-card dialog to the configured recipients.
+ * Checks if X-Card is enabled and timeout has passed, then creates the X-Card popout
+ * for users based on the configured scope (gm-only or all-players).
  * @returns {void}
  */
 export function showXCardDialog() {

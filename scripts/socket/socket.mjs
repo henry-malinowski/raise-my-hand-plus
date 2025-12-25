@@ -1,12 +1,19 @@
 import { MODULE_ID } from "../raise-my-hand.mjs";
 import * as socketHandlers from "./handlers.mjs";
 
-/** @type {Socket|null} The socketlib socket instance */
+/**
+ * The socketlib socket instance for this module.
+ * Initialized during the 'socketlib.ready' hook.
+ * @type {Socket|null} The socketlib Socket instance, or null if not yet initialized
+ * @private
+ * @see {@link https://github.com/farling42/foundryvtt-socketlib socketlib}
+ */
 let socket = null;
 
 /**
- * Get the socket instance.
- * @returns {Socket|null} The socket instance
+ * Get the socketlib socket instance for this module.
+ * @returns {Socket|null} The socketlib Socket instance, or null if not yet initialized
+ * @see {@link https://github.com/farling42/foundryvtt-socketlib socketlib}
  */
 export function getSocket() {
   return socket;
@@ -22,10 +29,14 @@ export function getActiveGmUserIds() {
 
 /**
  * Execute a handler function conditionally based on scope.
- * In either case, the current user will receive execute the handler as well.
- * @param {"gm-only"|"all-players"} scope The scope string indicating who should receive the handler
- * @param {function} handler the handler function to execute
- * @param  {...any} args arguments to pass to the handler
+ * In either case, the current user will also execute the handler locally.
+ * For "gm-only" scope, executes for all GMs and the current user (if not a GM).
+ * For "all-players" scope, executes for everyone.
+ * @param {"gm-only"|"all-players"} scope - The scope string indicating who should receive the handler
+ * @param {Function} handler - The handler function to execute (must be registered with socket.register)
+ * @param {...any} args - Arguments to pass to the handler
+ * @returns {void}
+ * @see {@link https://github.com/farling42/foundryvtt-socketlib/blob/381254339c721344aabb0f56e48cc6d2d1b6a604/src/socketlib.js#L87 socketlib}
  */
 export function conditionalExecute(scope, handler, ...args) {
   if (!socket) {
@@ -37,8 +48,7 @@ export function conditionalExecute(scope, handler, ...args) {
 
     // If the current user is not a GM, execute the handler for that user as well
     // so they see their own notifications (Hand Raise, X-Card)
-    if (!game.user.isGM)
-    {
+    if (!game.user.isGM) {
       socket.executeAsUser(handler, game.userId, ...args);
     }
   } else {
@@ -47,7 +57,8 @@ export function conditionalExecute(scope, handler, ...args) {
 }
 
 /**
- * Initialize the socket and register all socket callbacks.
+ * Initialize the socketlib socket and register all socket callbacks.
+ * Called during the 'socketlib.ready' hook. 
  * @returns {void}
  */
 export function initSocket() {

@@ -2,18 +2,32 @@ import { MODULE_ID } from "../raise-my-hand.mjs";
 import NotificationPopout from "../applications/apps/notification-popout.mjs";
 import { playSoundWithReplacement } from "../handlers/helpers.mjs";
 
-/** Animation timing constants (in milliseconds) - must match CSS defaults */
+/**
+ * Animation timing constants (in milliseconds) - must match CSS defaults.
+ * @type {number}
+ * @private
+ */
 const FADE_DURATION = 200;  // 0.2s fade-in/fade-out
+
+/**
+ * Animation timing constants (in milliseconds) - must match CSS defaults.
+ * @type {number}
+ * @private
+ */
 const WAVE_DURATION = 1750; // 1.75s waving animation
 
-/** @type {Object|null} Track single popout instance and user id that raised the hand */
+/**
+ * Track the single hand-raised popout instance and the user ID that raised the hand.
+ * @type {{popout: NotificationPopout, id: string}|null}
+ * @private
+ */
 let handRaisedPopout = null;
 
 /**
  * Check if a user has their hand raised based on enabled toggle notification modes.
  * Only checks for indicators that are relevant in toggle mode (playerList and popout).
  * @param {string} userId - The ID of the user to check
- * @param {object} handSettings - The hand settings object containing notification modes
+ * @param {HandSettingsData} handSettings - The hand settings object containing notification modes
  * @returns {boolean} True if the hand appears to be raised
  */
 export function isHandRaised(userId, handSettings) {
@@ -38,6 +52,7 @@ export function isHandRaised(userId, handSettings) {
  * @param {string} name - The name of the player who raised the hand.
  * @param {boolean} permanent - True if the notification should be permanent, false if it should be temporary.
  * @returns {void}
+ * @see {@link https://foundryvtt.com/api/classes/foundry.applications.ui.Notifications.html Notifications}
  */
 export function createUiNotification(name, permanent) {
   ui.notifications.info("raise-my-hand.UINOTIFICATION", { format: {name}, permanent});
@@ -147,7 +162,7 @@ export function clearPlayerListIcons() {
  * Create a popout with the player's name and image.
  * @param {string} id - The ID of the player who raised the hand.
  * @param {string} imagePath - The path to the image to display in the popout.
- * @returns {void}
+ * @returns {Promise<void>}
  */
 export async function createHandPopout(id, imagePath) {
   const user = game.users.get(id);
@@ -172,7 +187,7 @@ export async function createHandPopout(id, imagePath) {
 /**
  * Close the hand popout if it exists and is associated with the player.
  * @param {string} id - The ID of the player who raised the hand.
- * @returns {void}
+ * @returns {Promise<void>}
  */
 export async function closeHandPopout(id) {
   // Only close if it's the current user's popout
@@ -203,7 +218,7 @@ export function lowerHandForUser(id) {
 /**
  * Create a popout with the X-card image and play the X-card sound if enabled.
  * @param {string} id - The ID of the user who triggered the X-card.
- * @returns {void}
+ * @returns {Promise<void>}
  */
 export async function createXCardPopout(id) {
   const xCardSettings = game.settings.get(MODULE_ID, "xCardSettings");
@@ -211,7 +226,8 @@ export async function createXCardPopout(id) {
   const user = game.users.get(id);
 
   // Get the name of the user or an empty string if anonymous
-  const name = xCardSettings.anonymousWarning ? "" : (user?.name ?? "");
+  const ANONYMOUS_STRING = "";
+  const name = xCardSettings.anonymousWarning ? ANONYMOUS_STRING : (user?.name ?? ANONYMOUS_STRING);
 
   const popout = new NotificationPopout({
     classes: ["themed", "theme-dark"],

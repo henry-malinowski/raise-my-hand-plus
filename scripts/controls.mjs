@@ -1,3 +1,7 @@
+/**
+ * The module ID used for FoundryVTT module registration and settings.
+ * @type {string}
+ */
 const MODULE_ID = 'raise-my-hand';
 import * as handHandlers from "./handlers/hand.mjs";
 import * as xcardHandlers from "./handlers/xcard.mjs";
@@ -12,7 +16,8 @@ const {KeyboardManager} = foundry.helpers.interaction;
 /**
  * Register the token controls for the module.
  * The hand raise/lower toggle is controlled by the "handSettings.general.isToggle" setting.
- * @param {Record<string, SceneControl>} controls - The SceneControl configurations.
+ * @param {Record<string, foundry.SceneControl>} controls - The SceneControl configurations.
+ * @see {@link https://foundryvtt.com/api/interfaces/foundry.SceneControl.html SceneControl}
  * @returns {void}
  */
 export function registerTokenControls(controls) {
@@ -74,9 +79,10 @@ export function registerTokenControls(controls) {
 
 /**
  * Get context menu options for lowering a player's hand from the players list.
- * @description Call back function of the 'getUserContextOptions' hook.
- * @param {Players} app - The Players application instance
- * @param {ContextMenuEntry[]} menuItems - The existing context menu options array to modify
+ * Callback function for the 'getUserContextOptions' hook.
+ * @param {foundry.applications.ui.Players} app - The Players application instance
+ * @param {foundry.ContextMenuEntry[]} menuItems - The existing context menu options array to modify
+ * @see {@link https://foundryvtt.com/api/interfaces/foundry.ContextMenuEntry.html ContextMenuEntry}
  * @returns {void}
  */
 export function getLowerHandContextOptions(app, menuItems) {
@@ -115,9 +121,9 @@ export function getLowerHandContextOptions(app, menuItems) {
  * Format a keybinding as HTML with Foundry styling.
  * Reuses logic from ControlsConfig.humanizeBinding but wraps parts in <span class="reference">.
  * Formats up to 2 bindings, joined with localized "or".
- * @param {string} namespace - The module namespace
- * @param {string} action - The action identifier
- * @returns {string} The formatted HTML string, or empty string if no bindings
+ * @param {string} namespace - The module namespace (e.g., "raise-my-hand")
+ * @param {string} action - The action identifier (e.g., "raise-hand")
+ * @returns {string} The formatted HTML string, or empty string if no bindings exist
  */
 function formatKeybindingHTML(namespace, action) {
   const bindings = game.keybindings.get(namespace, action);
@@ -150,8 +156,10 @@ function formatKeybindingHTML(namespace, action) {
 
 /**
  * Build toolclip items for the Raise Hand tool.
- * @param {HandSettingsData} settings - The hand settings object
- * @returns {ToolclipConfigurationItem[]} The array of toolclip items
+ * Creates toolclip items showing the keybinding and all enabled notification modes with their scopes.
+ * @param {HandSettingsData} settings - The hand settings object containing notification modes and scopes
+ * @returns {foundry.ToolclipConfigurationItem[]} The array of toolclip items to display
+ * @see {@link https://foundryvtt.com/api/interfaces/foundry.ToolclipConfigurationItem.html ToolclipConfigurationItem}
  */
 function buildRaiseHandToolclipItems(settings) {
   const items = [];
@@ -197,8 +205,10 @@ function buildRaiseHandToolclipItems(settings) {
 
 /**
  * Build toolclip items for the X-Card tool.
+ * Creates toolclip items showing the keybinding, scope, and anonymous warning setting.
  * @param {XCardSettingsData} settings - The X-Card settings object
- * @returns {ToolclipConfigurationItem[]} The array of toolclip items
+ * @returns {foundry.ToolclipConfigurationItem[]} The array of toolclip items to display
+ * @see {@link https://foundryvtt.com/api/interfaces/foundry.ToolclipConfigurationItem.html ToolclipConfigurationItem}
  */
 function buildXCardToolclipItems(settings) {
   const items = [];

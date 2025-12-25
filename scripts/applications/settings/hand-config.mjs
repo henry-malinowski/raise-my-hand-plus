@@ -4,9 +4,20 @@ const {ApplicationV2, HandlebarsApplicationMixin} = foundry.applications.api;
 const {FormDataExtended} = foundry.applications.ux;
 import HandSettingsData from "../../data/settings/HandSettingsData.mjs";
 
+/**
+ * Settings configuration application for hand raising settings.
+ * Provides a form-based UI for configuring all hand raising notification modes and options.
+ * @extends {foundry.applications.api.ApplicationV2}
+ * @see {@link https://foundryvtt.com/api/classes/foundry.applications.api.ApplicationV2.html ApplicationV2}
+ * @see {@link https://foundryvtt.com/api/functions/foundry.applications.api.HandlebarsApplicationMixin.html HandlebarsApplicationMixin}
+ */
 export default class HandConfig extends HandlebarsApplicationMixin(ApplicationV2) {
 
-  /** @inheritDoc */
+  /**
+   * Default application options.
+   * @type {ApplicationOptions}
+   * @inheritDoc
+   */
   static DEFAULT_OPTIONS = {
     id: "hand-settings-config",
     tag: "form",
@@ -24,7 +35,11 @@ export default class HandConfig extends HandlebarsApplicationMixin(ApplicationV2
     }
   };
 
-  /** @override */
+  /**
+   * Application parts configuration.
+   * @type {Object}
+   * @override
+   */
   static PARTS = {
     form: {
       template: "modules/raise-my-hand/templates/settings/menus/hand-config.hbs",
@@ -41,7 +56,16 @@ export default class HandConfig extends HandlebarsApplicationMixin(ApplicationV2
    */
   static #localized = false;
 
-  /** @inheritDoc */
+  /**
+   * Prepare the first render by localizing the schema.
+   * @param {foundry.applications.types.ApplicationRenderContext} context - The render context
+   * @param {foundry.applications.types.ApplicationRenderOptions} options - Render options
+   * @returns {Promise<void>}
+   * @protected
+   * @inheritDoc
+   * @see {@link https://foundryvtt.com/api/interfaces/foundry.applications.types.ApplicationRenderContext.html ApplicationRenderContext}
+   * @see {@link https://foundryvtt.com/api/interfaces/foundry.applications.types.ApplicationRenderOptions.html ApplicationRenderOptions}
+   */
   async _preFirstRender(context, options) {
     await super._preFirstRender(context, options);
     if ( !HandConfig.#localized ) {
@@ -62,8 +86,9 @@ export default class HandConfig extends HandlebarsApplicationMixin(ApplicationV2
   }
 
   /**
-   * The current setting value
+   * The current setting value being edited.
    * @type {HandSettingsData}
+   * @private
    */
   #setting;
 
@@ -71,7 +96,14 @@ export default class HandConfig extends HandlebarsApplicationMixin(ApplicationV2
 
   /* -------------------------------------------- */
 
-  /** @override */
+  /**
+   * Prepare the context data for rendering.
+   * @param {foundry.applications.types.ApplicationRenderOptions} options - Render options
+   * @returns {Promise<Object>} The context data with setting, fields, and buttons
+   * @protected
+   * @override
+   * @see {@link https://foundryvtt.com/api/interfaces/foundry.applications.types.ApplicationRenderOptions.html ApplicationRenderOptions}
+   */
   async _prepareContext(options) {
     if ( options.isFirstRender ) {
       this.#setting = game.settings.get(MODULE_ID, "handSettings");
@@ -89,7 +121,14 @@ export default class HandConfig extends HandlebarsApplicationMixin(ApplicationV2
 
   /* -------------------------------------------- */
 
-  /** @override */
+  /**
+   * Handle form change events.
+   * Updates the setting from form data and re-renders the form.
+   * @param {Object} formConfig - The form configuration
+   * @param {Event} event - The change event
+   * @protected
+   * @override
+   */
   _onChangeForm(formConfig, event) {
     const formData = new FormDataExtended(this.form);
     this.#setting = HandConfig.#cleanFormData(formData);
@@ -98,8 +137,11 @@ export default class HandConfig extends HandlebarsApplicationMixin(ApplicationV2
 
   /**
    * Clean the form data using the schema.
-   * @param {FormDataExtended} formData
-   * @returns {HandSettingsData}
+   * Expands the form data object and creates a new HandSettingsData instance.
+   * @param {foundry.applications.ux.FormDataExtended} formData - The form data to clean
+   * @returns {HandSettingsData} A new HandSettingsData instance with cleaned data
+   * @private
+   * @see {@link https://foundryvtt.com/api/classes/foundry.applications.ux.FormDataExtended.html FormDataExtended}
    */
   static #cleanFormData(formData) {
     const expanded = foundry.utils.expandObject(formData.object);
