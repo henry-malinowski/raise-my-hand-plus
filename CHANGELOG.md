@@ -1,95 +1,163 @@
+## 3.1.0
+
+### Speaking Queue
+
+- Added a FIFO speaking queue with position badges on player list icons, camera views, and cinematic mode
+- First person in queue (position 0) gets a green megaphone icon instead of a hand, indicating they are the current speaker; others show their waiting position
+- Queue setting moved from hand settings menu to a top-level module setting
+- Urgent speak: in queue mode, the X-Card button is repurposed to let players signal urgency (red hand indicator)
+- Queue reorders automatically when a player disconnects
+
+### Public API
+
+- Introduced `game.modules.get('raise-my-hand').api` for other modules to read hand/queue state and trigger actions
+- New `raise-my-hand.stateChanged` hook fires on all clients whenever hand or queue state changes, enabling third-party integrations
+
+### Indicator Improvements
+
+- Player list and camera view indicators now persist across player list re-renders and connection changes
+- Speaking state (green megaphone) and urgent state (red) visuals across all indicator types
+
 ## 3.0.0
+
 ### General Changes
+
 - Migrated to esbuild bundling for improved load times by cutting down on successive HTTP requests.
-    - Source maps provided for debugging
+  - Source maps provided for debugging
 - Keybinding now route or pseudo-route through UI control handlers for consistant behavior (fixes [issue #26](https://github.com/henry-malinowski/raise-my-hand-plus/issues/26))
 
 ### Overhauled Settings system
-- *Technical:* Settings are now stored in [`DataModels`](https://foundryvtt.com/api/classes/foundry.abstract.DataModel.html); reducing API calls to `game.setting.get` and enabling better migration support if/when it's needed in the future
-- Rich popout menus for settings that are progressively discovered; only showing currently relevant settings. 
+
+- _Technical:_ Settings are now stored in [`DataModels`](https://foundryvtt.com/api/classes/foundry.abstract.DataModel.html); reducing API calls to `game.setting.get` and enabling better migration support if/when it's needed in the future
+- Rich popout menus for settings that are progressively discovered; only showing currently relevant settings.
 - Generally more customization is possible without additional cognitive load.
-- Changing Hand or X-Card settings no longer requires reloading Foundry. *Hooray!* 🥳
+- Changing Hand or X-Card settings no longer requires reloading Foundry. _Hooray!_ 🥳
 - Settings now have a "Reset \[to defaults\]" button
 
 ### Notification Changes
+
 - Notifications with scope set to "GM only", now always show for the triggering user as feedback that the notification was sent
 
 ### Player List Changes
+
 - Right clicking a name to get the user context options offers another way to lower hands
-    - A player can right-click their own name to lower their hand
-    - A GM can use right-click any user's name to lower that user's hand
+  - A player can right-click their own name to lower their hand
+  - A GM can use right-click any user's name to lower that user's hand
 - The Player List hand now has animations and improvements to visibility and two modes
-    - When toggle mode is enabled, it works like the original style
-    - When not in toggle mode, the hand appears, and goes away after an adjustable duration
+  - When toggle mode is enabled, it works like the original style
+  - When not in toggle mode, the hand appears, and goes away after an adjustable duration
 
 ### Scene Control Changes
+
 - Hand Raiser button is removed when no Hand notification modes are enabled
 - Raise Hand and X-Card buttons now have toolclips; featuring a demonstration of the action and an abbreviation of the current notification settings
 
 ### Styling Improvements
+
 - Improved Light Mode support
 - Styling moved to use Foundry's implementation of CSS Cascade Layers; paving the way for the future development of modules and systems that restyle raise-my-hand that may be further developed in a future release
 
 ## 2.1.0
+
 - Added a setting to deploy the X-Card anonymous for tables that wish to use it. (feature requested in [issue #25](https://github.com/henry-malinowski/raise-my-hand-plus/issues/25))
 
 ## 2.0.0
+
 - Added a configurable timeout feature ([issue #21](https://github.com/henry-malinowski/raise-my-hand-plus/issues/21)). Default is 10 seconds.
 - Fixed sizing and duplication of popups relating to hand raising or X-Cards
 - Suppressed erronious pop-out of this module's notification-popout class in Foundry V14
 - Replaced `xcard.webp` with a new SVG to improve initial load time
 - XCard now shows name of the user raising the card in accordance with John Stavropoulos seminal document
 - Suppressed multiple sounds playing from module when multiple prompted, only the most recent notification plays
-- The raise-my-hand button configures as a proper toggle when set as such 
+- The raise-my-hand button configures as a proper toggle when set as such
 - The toggle is also suppress by the timeout feature
 - General code cleanup, refactoring, and assorted bug fixing as found
 - Readme improvements (properly center images, updated examples for V13, etc.)
 
 ## 1.5.0
+
 - v13 https://github.com/henry-malinowski/raise-my-hand-plus/issues/20
 
 ## 1.4.9
+
 - fix for sound
 
 ## 1.4.8
+
 - sound can play only for gm user https://github.com/henry-malinowski/raise-my-hand-plus/issues/17
 
 ## 1.4.7
+
 - v12
 - fix AudioHelper
 
 ## 1.4.6
-- translation pt-br  fix
+
+- translation pt-br fix
 
 ## 1.4.5
+
 - v11 only
 
 ## 1.4.4
+
 - small fix
 
 ## 1.4.3
+
 - v11
 
 ## 1.4.2
+
 - dialog is easier to close
 
 ## 1.4.1
+
 - Disable X-Card Key
--  Add volume slider for x-card sound
+- Add volume slider for x-card sound
 
 ## 1.4.0
+
 - removed shake screen (kandashi fluid is broken)
 - added dialog option
 - dialog detect img size
 - x card button on side bar
 - x card key
 - x card sound
-- localization en/pt-br 
+- localization en/pt-br
 - v10 fixes - no error/no warns
 - filepicker! really cool
 
 ## 1.3.5
+
 Update lang files in en, de and fr ([issue #11](https://github.com/henry-malinowski/raise-my-hand-plus/issues/11))
 
 ## 1.3.4
+
+toogle mod option
+r to close
+
+## 1.4.1
+
+- Disable X-Card Key
+- Add volume slider for x-card sound
+
+## 1.4.0
+
+- removed shake screen (kandashi fluid is broken)
+- added dialog option
+- dialog detect img size
+- x card button on side bar
+- x card key
+- x card sound
+- localization en/pt-br
+- v10 fixes - no error/no warns
+- filepicker! really cool
+
+## 1.3.5
+
+Update lang files in en, de and fr ([issue #11](https://github.com/henry-malinowski/raise-my-hand-plus/issues/11))
+
+## 1.3.4
+
 toogle mod option
