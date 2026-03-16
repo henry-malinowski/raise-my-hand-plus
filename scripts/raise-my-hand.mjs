@@ -370,31 +370,36 @@ async function migrateEnableQueue() {
  */
 function onUserConnected(user, context) {
   if (game.users.activeGM?.id !== game.userId) return;
+
+  // Always broadcast queue state so the new client receives it
   const handSettings = game.settings.get(MODULE_ID, "handSettings");
-  if (!game.settings.get(MODULE_ID, "enableQueue") || !handSettings.general.isToggle) return;
-  broadcastQueueState();
+  if (game.settings.get(MODULE_ID, "enableQueue") && handSettings.general.isToggle) {
+    broadcastQueueState();
+  }
 }
 
 /**
- * When a user disconnects, if we are the active GM, remove them from the queue
- * and clean up their indicators on all clients.
+ * When a user disconnects, if we are the active GM, clean up their raised hand
+ * indicators and remove them from the queue (if queue mode is active).
  * @param {User} user - The user who disconnected
  * @param {object} context - Connection context
  * @returns {void}
  */
 function onUserDisconnected(user, context) {
   if (game.users.activeGM?.id !== game.userId) return;
-  const handSettings = game.settings.get(MODULE_ID, "handSettings");
-  if (!game.settings.get(MODULE_ID, "enableQueue") || !handSettings.general.isToggle) return;
 
-  // Remove the disconnected user's indicator on all clients
+  // Always clean up raised hand indicators for the disconnected user
   const socket = getSocket();
   socket?.executeForEveryone(removePlayerListIcon, user.id);
 
-  const gmQueue = getGmQueue();
-  if (gmQueue.remove(user.id)) {
-    getGmUrgentUsers().delete(user.id);
-    broadcastQueueState();
+  // Clean up queue state if queue mode is active
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  if (game.settings.get(MODULE_ID, "enableQueue") && handSettings.general.isToggle) {
+    const gmQueue = getGmQueue();
+    if (gmQueue.remove(user.id)) {
+      getGmUrgentUsers().delete(user.id);
+      broadcastQueueState();
+    }
   }
 }
 
