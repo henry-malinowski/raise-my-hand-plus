@@ -115,6 +115,7 @@ export function initSocket() {
   socket.register("closeHandPopout", socketHandlers.closeHandPopout);
   socket.register("createXCardPopout", socketHandlers.createXCardPopout);
   socket.register("lowerHandForUser", socketHandlers.lowerHandForUser);
+  socket.register("trackHandRaised", socketHandlers.trackHandRaised);
 
   // Queue handlers
   socket.register("requestQueueJoin", socketHandlers.requestQueueJoin);

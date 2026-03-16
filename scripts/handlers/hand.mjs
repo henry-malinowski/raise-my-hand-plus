@@ -2,7 +2,7 @@ import { MODULE_ID } from "../raise-my-hand.mjs";
 import { checkAndUpdateTimeout } from "./helpers.mjs";
 import { conditionalExecute, getActiveGmUserIds, getSocket } from "../socket/socket.mjs";
 import { playSoundWithReplacement } from "./helpers.mjs";
-import { appendPlayerListIcon, createUiNotification, createHandPopout, removePlayerListIcon, closeHandPopout, lowerHandForUser, requestQueueJoin, requestQueueRemove, requestUrgent } from "../socket/handlers.mjs";
+import { appendPlayerListIcon, createUiNotification, createHandPopout, removePlayerListIcon, closeHandPopout, lowerHandForUser, trackHandRaised, requestQueueJoin, requestQueueRemove, requestUrgent } from "../socket/handlers.mjs";
 
 const { renderTemplate } = foundry.applications.handlebars;
 
@@ -103,6 +103,14 @@ export async function raise({ skipTimeout = false } = {}) {
   };
 
   // --- Execution ---
+
+  // Always track raised hand state on all clients in toggle mode,
+  // independent of which notification modes are enabled.
+  if (handSettings.general.isToggle) {
+    const socket = getSocket();
+    socket?.executeForEveryone(trackHandRaised, id);
+  }
+
   const handlers = {
     playerList: showPlayerListIcon,
     ui: showUiNotification,

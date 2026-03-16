@@ -321,6 +321,20 @@ export async function createXCardPopout(id) {
   await Promise.all(promises);
 }
 
+// --- Hand State Tracking ---
+
+/**
+ * Track a user's hand as raised (all clients).
+ * Decoupled from playerList notification so state is tracked
+ * regardless of which notification modes are enabled.
+ * @param {string} id - The user ID
+ * @returns {void}
+ */
+export function trackHandRaised(id) {
+  raisedHands.add(id);
+  emitStateChanged();
+}
+
 // --- Queue Handlers ---
 
 /**
