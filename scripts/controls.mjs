@@ -40,7 +40,8 @@ export function registerTokenControls(controls) {
     button: !handSettings.general.isToggle,
     toggle: handSettings.general.isToggle,
     active: false, // initially deasserted, unused for button mode
-    visible: handSettings.general.notificationModes.size > 0,
+    visible: handSettings.general.notificationModes.size > 0
+      || (handSettings.general.isToggle && game.settings.get(MODULE_ID, "enableQueue")),
     ...(handSettings.general.isToggle
       ? { onChange: (event, active) => handHandlers.toggle(active) }
       : { onChange: (event, active) => handHandlers.raise() }
@@ -61,14 +62,17 @@ export function registerTokenControls(controls) {
    * @type {SceneControl}
    */
   const xCardSettings = game.settings.get(MODULE_ID, "xCardSettings");
+  const isQueueMode = handSettings.general.isToggle && game.settings.get(MODULE_ID, "enableQueue");
   tokenControlsTools['show-xcard'] = {
     name: 'show-xcard',
-    title: 'raise-my-hand.controls.show-xcard.name',
-    icon: 'fas fa-times',
+    title: isQueueMode ? 'raise-my-hand.controls.urgent-speak.name' : 'raise-my-hand.controls.show-xcard.name',
+    icon: isQueueMode ? 'fas fa-hand-paper' : 'fas fa-times',
     order: Object.keys(tokenControlsTools).length,
     button: true,
-    visible: xCardSettings.isEnabled,
-    onChange: (event, active) => xcardHandlers.showXCardDialog(),
+    visible: isQueueMode || xCardSettings.isEnabled,
+    onChange: isQueueMode
+      ? (event, active) => handHandlers.urgentSpeak()
+      : (event, active) => xcardHandlers.showXCardDialog(),
     toolclip: {
       src: `modules/${MODULE_ID}/assets/toolclips/tools/token-xcard.webm`,
       heading: "raise-my-hand.controls.show-xcard.name",

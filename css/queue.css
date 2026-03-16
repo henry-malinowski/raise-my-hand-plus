@@ -1,0 +1,53 @@
+/* Queue position badge on camera views */
+.raise-my-hand-queue-badge {
+  position: absolute;
+  top: 0.35em;
+  right: 0.35em;
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  background: rgba(26, 26, 46, 0.85);
+  color: #fff;
+  padding: 0.25em 0.5em;
+  border-radius: 0.4em;
+  border: 1.5px solid var(--raise-my-hand-yellow);
+  font-size: 1em;
+  font-weight: bold;
+  z-index: 1;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+
+  .fa-hand-paper,
+  .fa-bullhorn {
+    font-size: 0.95em;
+    color: var(--raise-my-hand-yellow);
+  }
+
+  .queue-position {
+    font-family: var(--font-primary);
+    line-height: 1;
+  }
+
+  .queue-position:empty {
+    display: none;
+  }
+
+  /* Speaking state: green megaphone (first in queue) */
+  &.speaking {
+    border-color: var(--raise-my-hand-green);
+
+    .fa-bullhorn {
+      color: var(--raise-my-hand-green);
+    }
+  }
+
+  /* Urgent state: red hand and border */
+  &.urgent {
+    border-color: var(--raise-my-hand-red);
+
+    .fa-hand-paper,
+    .fa-bullhorn {
+      color: var(--raise-my-hand-red);
+    }
+  }
+}

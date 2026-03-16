@@ -8,10 +8,11 @@ import { default as HandConfig } from "./applications/settings/hand-config.mjs";
 import { default as XCardConfig } from "./applications/settings/xcard-config.mjs";
 import HandSettingsData from "./data/settings/HandSettingsData.mjs";
 import XCardSettingsData from "./data/settings/XCardSettingsData.mjs";
-import { initSocket, getSocket } from "./socket/socket.mjs";
-import { clearPlayerListIcons } from "./socket/handlers.mjs";
+import { initSocket, getSocket, getGmQueue, getGmUrgentUsers, broadcastQueueState } from "./socket/socket.mjs";
+import { clearPlayerListIcons, reapplyQueueIndicators, updateCameraQueueBadges, removePlayerListIcon } from "./socket/handlers.mjs";
 import { registerTokenControls, getLowerHandContextOptions } from "./controls.mjs";
 import { registerHandlebarsHelpers } from "./applications/handlebars.mjs";
+import { api } from "./api.mjs";
 
 /**
  * The current settings era version for migration tracking.
@@ -31,6 +32,12 @@ Hooks.on("getUserContextOptions", getLowerHandContextOptions); // get the contex
 Hooks.on("getSceneControlButtons", registerTokenControls); // register the token controls
 Hooks.on("clientSettingChanged", clientSettingChanged); // update the controls toolclip when keybindings are changed
 
+// Queue lifecycle hooks
+Hooks.on("userConnected", onUserConnected);
+Hooks.on("userDisconnected", onUserDisconnected);
+Hooks.on("renderPlayerList", reapplyQueueIndicators);
+Hooks.on("renderCameraViews", updateCameraQueueBadges);
+
 /**
  * Initialize the module.
  * Called during the 'init' hook to register handlebars helpers, settings, and keybindings.
@@ -40,6 +47,9 @@ function init() {
   registerHandlebarsHelpers();
   registerSettings(); // registers the modules settings as well as 'settings-era' with a default of "1"
   registerKeybindings();
+
+  // Expose public API for other modules
+  game.modules.get(MODULE_ID).api = api;
 }
 
 /**
@@ -64,6 +74,32 @@ function registerSettings() {
   });
 
   // Main settings (visible in main settings)
+  game.settings.register(MODULE_ID, 'enableQueue', {
+    name: "raise-my-hand.settings.enableQueue.name",
+    hint: "raise-my-hand.settings.enableQueue.hint",
+    scope: 'world',
+    config: true,
+    default: false,
+    type: Boolean,
+    restricted: true,
+    onChange: (value) => {
+      // Re-render controls so the X-card/urgent button updates
+      ui.controls.render({reset: true});
+
+      // Clear queue if queue was disabled
+      if (!value) {
+        if (game.users.activeGM?.id === game.userId) {
+          const gmQueue = getGmQueue();
+          if (gmQueue.length > 0) {
+            gmQueue.clear();
+            getGmUrgentUsers().clear();
+            broadcastQueueState();
+          }
+        }
+      }
+    }
+  });
+
   game.settings.register(MODULE_ID, 'notificationTimeout', {
     name: "raise-my-hand.settings.notificationTimeout.name",
     hint: "raise-my-hand.settings.notificationTimeout.hint",
@@ -94,6 +130,18 @@ function registerSettings() {
       if (!value.general.isToggle) {
         const socket = getSocket();
         socket?.executeForEveryone(clearPlayerListIcons);
+      }
+
+      // Clear queue if toggle mode turned off
+      if (!value.general.isToggle) {
+        if (game.users.activeGM?.id === game.userId) {
+          const gmQueue = getGmQueue();
+          if (gmQueue.length > 0) {
+            gmQueue.clear();
+            getGmUrgentUsers().clear();
+            broadcastQueueState();
+          }
+        }
       }
     },
   });
@@ -185,6 +233,9 @@ async function ready() {
   if (foundry.utils.isNewerVersion(CURRENT_ERA, era)) {
     await migrateSettings();
   }
+
+  // Migrate enableQueue from handSettings.general to top-level setting
+  await migrateEnableQueue();
 }
 
 /**
@@ -281,6 +332,70 @@ async function migrateSettings() {
   ]);
   
   ui.notifications.info(`✋ ${MODULE_ID} | Settings migration complete.`);
+}
+
+/**
+ * Migrate enableQueue from handSettings.general to a top-level module setting.
+ * Reads the raw stored value and copies it if present, then re-saves handSettings
+ * so the DataModel's migrateData strips the old field.
+ * Only runs once — after migration, the raw value no longer contains enableQueue.
+ * @returns {Promise<void>}
+ */
+async function migrateEnableQueue() {
+  if (!game.user.isGM) return;
+
+  // Read the raw stored object (before DataModel cleaning)
+  const worldSettings = game.settings.storage.get("world");
+  const raw = worldSettings.get(`${MODULE_ID}.handSettings`);
+  if (!raw?.general || !("enableQueue" in raw.general)) return;
+
+  console.log(`${MODULE_ID} | Migrating enableQueue to top-level setting`);
+
+  // Copy the old value to the new top-level setting
+  if (raw.general.enableQueue) {
+    await game.settings.set(MODULE_ID, "enableQueue", true);
+  }
+
+  // Re-save handSettings so DataModel.migrateData strips the old field
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  await game.settings.set(MODULE_ID, "handSettings", handSettings.toObject());
+}
+
+/**
+ * When a user connects, if we are the active GM, broadcast the current queue state
+ * so the new client receives the queue.
+ * @param {User} user - The user who connected
+ * @param {object} context - Connection context
+ * @returns {void}
+ */
+function onUserConnected(user, context) {
+  if (game.users.activeGM?.id !== game.userId) return;
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  if (!game.settings.get(MODULE_ID, "enableQueue") || !handSettings.general.isToggle) return;
+  broadcastQueueState();
+}
+
+/**
+ * When a user disconnects, if we are the active GM, remove them from the queue
+ * and clean up their indicators on all clients.
+ * @param {User} user - The user who disconnected
+ * @param {object} context - Connection context
+ * @returns {void}
+ */
+function onUserDisconnected(user, context) {
+  if (game.users.activeGM?.id !== game.userId) return;
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  if (!game.settings.get(MODULE_ID, "enableQueue") || !handSettings.general.isToggle) return;
+
+  // Remove the disconnected user's indicator on all clients
+  const socket = getSocket();
+  socket?.executeForEveryone(removePlayerListIcon, user.id);
+
+  const gmQueue = getGmQueue();
+  if (gmQueue.remove(user.id)) {
+    getGmUrgentUsers().delete(user.id);
+    broadcastQueueState();
+  }
 }
 
 /**

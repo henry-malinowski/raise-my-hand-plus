@@ -1,5 +1,6 @@
 import { MODULE_ID } from "../raise-my-hand.mjs";
 import * as socketHandlers from "./handlers.mjs";
+import QueueState from "../data/QueueState.mjs";
 
 /**
  * The socketlib socket instance for this module.
@@ -9,6 +10,20 @@ import * as socketHandlers from "./handlers.mjs";
  * @see {@link https://github.com/farling42/foundryvtt-socketlib socketlib}
  */
 let socket = null;
+
+/**
+ * The authoritative speaking queue, only meaningful on the active GM client.
+ * @type {QueueState}
+ * @private
+ */
+const gmQueue = new QueueState();
+
+/**
+ * The authoritative set of urgent speakers, only meaningful on the active GM client.
+ * @type {Set<string>}
+ * @private
+ */
+const gmUrgentUsers = new Set();
 
 /**
  * Get the socketlib socket instance for this module.
@@ -25,6 +40,34 @@ export function getSocket() {
  */
 export function getActiveGmUserIds() {
   return game.users.filter(user => user.isGM && user.active).map(user => user.id);
+}
+
+/**
+ * Get the GM-authoritative speaking queue instance.
+ * Only meaningful on the active GM client.
+ * @returns {QueueState}
+ */
+export function getGmQueue() {
+  return gmQueue;
+}
+
+/**
+ * Get the GM-authoritative urgent users set.
+ * Only meaningful on the active GM client.
+ * @returns {Set<string>}
+ */
+export function getGmUrgentUsers() {
+  return gmUrgentUsers;
+}
+
+/**
+ * Broadcast the current GM queue state to all connected clients.
+ * Should only be called from the active GM client after mutating the queue.
+ * @returns {void}
+ */
+export function broadcastQueueState() {
+  if (!socket) return;
+  socket.executeForEveryone(socketHandlers.syncQueueState, gmQueue.getAll(), [...gmUrgentUsers]);
 }
 
 /**
@@ -72,4 +115,10 @@ export function initSocket() {
   socket.register("closeHandPopout", socketHandlers.closeHandPopout);
   socket.register("createXCardPopout", socketHandlers.createXCardPopout);
   socket.register("lowerHandForUser", socketHandlers.lowerHandForUser);
+
+  // Queue handlers
+  socket.register("requestQueueJoin", socketHandlers.requestQueueJoin);
+  socket.register("requestQueueRemove", socketHandlers.requestQueueRemove);
+  socket.register("requestUrgent", socketHandlers.requestUrgent);
+  socket.register("syncQueueState", socketHandlers.syncQueueState);
 }

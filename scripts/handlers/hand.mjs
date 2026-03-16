@@ -1,8 +1,8 @@
 import { MODULE_ID } from "../raise-my-hand.mjs";
-import { checkAndUpdateTimeout, timeoutPassed } from "./helpers.mjs";
+import { checkAndUpdateTimeout } from "./helpers.mjs";
 import { conditionalExecute, getActiveGmUserIds, getSocket } from "../socket/socket.mjs";
 import { playSoundWithReplacement } from "./helpers.mjs";
-import { appendPlayerListIcon, createUiNotification, createHandPopout, removePlayerListIcon, closeHandPopout, lowerHandForUser } from "../socket/handlers.mjs";
+import { appendPlayerListIcon, createUiNotification, createHandPopout, removePlayerListIcon, closeHandPopout, lowerHandForUser, requestQueueJoin, requestQueueRemove, requestUrgent } from "../socket/handlers.mjs";
 
 const { renderTemplate } = foundry.applications.handlebars;
 
@@ -12,15 +12,7 @@ const { renderTemplate } = foundry.applications.handlebars;
  * @returns {void}
  */
 export function toggle(active) {
-  // If trying to raise hand, check timeout first
-  if (active && !timeoutPassed()) {
-    // forcibly deassert the control and return
-    ui.controls.controls["tokens"].tools["raise-hand"].active = false;
-    ui.controls.render();
-    return;
-  }
-
-  active ? raise() : lower();
+  active ? raise({ skipTimeout: true }) : lower();
   ui.controls.controls["tokens"].tools["raise-hand"].title = `raise-my-hand.controls.raise-hand.toggle.${active}`;
   ui.controls.render();
 }
@@ -28,11 +20,13 @@ export function toggle(active) {
 /**
  * Raise the hand and trigger all enabled notification modes.
  * Checks timeout to prevent spam, then executes all enabled notification handlers (playerList, ui, chat, popout, aural) in parallel.
+ * @param {object} [options={}] - Options for raising the hand
+ * @param {boolean} [options.skipTimeout=false] - Skip the timeout check (used by toggle mode)
  * @returns {Promise<void>}
  */
-export async function raise() {
+export async function raise({ skipTimeout = false } = {}) {
   // Check timeout to prevent spam and update timestamp
-  if (!checkAndUpdateTimeout()) return;
+  if (!skipTimeout && !checkAndUpdateTimeout()) return;
 
   const id = game.userId;
   const player = game.users.get(id);
@@ -123,6 +117,12 @@ export async function raise() {
   }, []);
 
   await Promise.all(tasks);
+
+  // Request to join the speaking queue if enabled
+  if (game.settings.get(MODULE_ID, "enableQueue") && handSettings.general.isToggle) {
+    const socket = getSocket();
+    socket?.executeForAllGMs(requestQueueJoin, id);
+  }
 }
 
 /**
@@ -133,11 +133,46 @@ export function lower() {
   const socket = getSocket();
   const id = game.userId;
 
-  // always attempt remove regardless of settings as they 
+  // always attempt remove regardless of settings as they
   // could've changed after the hand was raised
   // and they become no-ops if it's not applicable anyway
   socket?.executeForEveryone(removePlayerListIcon, id);
   socket?.executeForEveryone(closeHandPopout, id);
+
+  // Request removal from the speaking queue
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  if (game.settings.get(MODULE_ID, "enableQueue") && handSettings.general.isToggle) {
+    socket?.executeForAllGMs(requestQueueRemove, id);
+  }
+}
+
+/**
+ * Toggle urgent speaking status for the current user.
+ * When queue mode is active, this marks the user as needing to speak urgently.
+ * If the user's hand is not raised, it will be raised and the toggle asserted.
+ * @returns {void}
+ */
+export function urgentSpeak() {
+  const id = game.userId;
+  const socket = getSocket();
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+
+  // Ensure hand is raised (assert toggle if not already active)
+  const tool = ui.controls.controls["tokens"]?.tools["raise-hand"];
+  if (tool?.toggle && !tool.active) {
+    raise({ skipTimeout: true });
+    tool.active = true;
+    tool.title = "raise-my-hand.controls.raise-hand.toggle.true";
+    ui.controls.render();
+  }
+
+  // If player list mode is enabled, ensure the icon exists for everyone
+  if (handSettings.general.notificationModes.has("playerList")) {
+    conditionalExecute(handSettings.playerList.scope, appendPlayerListIcon, id);
+  }
+
+  // Request urgent toggle on the GM
+  socket?.executeForAllGMs(requestUrgent, id);
 }
 
 /**
@@ -154,4 +189,10 @@ export function lowerForUser(userId) {
 
   // Lower the hand toggle control for the target user (only affects their client)
   socket?.executeAsUser(lowerHandForUser, userId, userId);
+
+  // Request removal from the speaking queue
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  if (game.settings.get(MODULE_ID, "enableQueue") && handSettings.general.isToggle) {
+    socket?.executeForAllGMs(requestQueueRemove, userId);
+  }
 }

@@ -1,6 +1,17 @@
 import { MODULE_ID } from "../raise-my-hand.mjs";
 import NotificationPopout from "../applications/apps/notification-popout.mjs";
 import { playSoundWithReplacement } from "../handlers/helpers.mjs";
+import { getGmQueue, getGmUrgentUsers, broadcastQueueState } from "./socket.mjs";
+import QueueState from "../data/QueueState.mjs";
+
+/**
+ * Fire the state change hook so external modules can react to hand/queue changes.
+ * @returns {void}
+ * @private
+ */
+function emitStateChanged() {
+  Hooks.callAll("raise-my-hand.stateChanged");
+}
 
 /**
  * Animation timing constants (in milliseconds) - must match CSS defaults.
@@ -24,6 +35,29 @@ const WAVE_DURATION = 1750; // 1.75s waving animation
 let handRaisedPopout = null;
 
 /**
+ * Local mirror of the speaking queue, synced from the GM via syncQueueState.
+ * @type {QueueState}
+ * @private
+ */
+const localQueue = new QueueState();
+
+/**
+ * Track which users currently have their hand raised in toggle mode.
+ * This is the source of truth for re-applying indicators after DOM re-renders.
+ * @type {Set<string>}
+ * @private
+ */
+const raisedHands = new Set();
+
+/**
+ * Local mirror of which users are marked as urgent speakers.
+ * Synced from the GM alongside the queue state.
+ * @type {Set<string>}
+ * @private
+ */
+const urgentUsers = new Set();
+
+/**
  * Check if a user has their hand raised based on enabled toggle notification modes.
  * Only checks for indicators that are relevant in toggle mode (playerList and popout).
  * @param {string} userId - The ID of the user to check
@@ -31,15 +65,11 @@ let handRaisedPopout = null;
  * @returns {boolean} True if the hand appears to be raised
  */
 export function isHandRaised(userId, handSettings) {
-  const notificationModes = handSettings.general.notificationModes;
-
-  // Check for player list icon (only if playerList mode is enabled)
-  if (notificationModes.has("playerList")) {
-    const playerName = document.querySelector(`[data-user-id="${userId}"] > .player-name`);
-    if (playerName?.querySelector('.raise-my-hand-indicator')) return true;
-  }
+  // Check in-memory state (survives DOM re-renders)
+  if (raisedHands.has(userId)) return true;
 
   // Check for active popout (only if popout mode is enabled)
+  const notificationModes = handSettings.general.notificationModes;
   if (notificationModes.has("popout")) {
     if (handRaisedPopout?.id === userId) return true;
   }
@@ -84,12 +114,32 @@ export function appendPlayerListIcon(id) {
   const isToggleMode = handSettings.general.isToggle;
   const holdTime = (handSettings.playerList.holdTime ?? 0) * 1000; // Convert to ms
 
+  // Track raised hand state for toggle mode (survives DOM re-renders)
+  if (isToggleMode) raisedHands.add(id);
+
+  // Determine icon class based on queue position (position 1 = speaking → megaphone)
+  const useQueue = game.settings.get(MODULE_ID, "enableQueue") && isToggleMode;
+  const position = useQueue ? localQueue.getPosition(id) : 0;
+  const isSpeaking = position === 1;
+  const iconClass = isSpeaking ? 'fa-bullhorn' : 'fa-hand-paper';
+
   // Create new icon element with fade-in and waving animation
   const icon = Object.assign(document.createElement('span'), {
-    className: 'raise-my-hand-indicator fas fa-hand-paper fade-in waving'
+    className: `raise-my-hand-indicator fas ${iconClass} fade-in waving`
   });
   icon.dataset.userId = id;
+
+  // Set queue state: speaking (green, no number) or waiting (yellow, show position - 1)
+  if (useQueue && position > 0) {
+    if (isSpeaking) {
+      icon.classList.add('speaking');
+    } else {
+      icon.dataset.queuePosition = position - 1;
+    }
+  }
+
   playerName.appendChild(icon);
+  emitStateChanged();
 
   // In non-toggle mode, fade-out and remove after animation + holdTime completes
   if (!isToggleMode) {
@@ -123,6 +173,7 @@ export function appendPlayerListIcon(id) {
  * @returns {void}
  */
 export function removePlayerListIcon(id) {
+  raisedHands.delete(id);
   const icon = document.querySelector(`[data-user-id="${id}"] > .player-name > .raise-my-hand-indicator`);
   if (icon) {
     // Clear any pending timeout
@@ -136,6 +187,11 @@ export function removePlayerListIcon(id) {
       if (icon.parentNode) icon.remove();
     }, FADE_DURATION);
   }
+
+  // Also remove the camera queue badge for this user
+  const cameraBadge = document.querySelector(`#camera-views .camera-view[data-user="${id}"] .raise-my-hand-queue-badge`);
+  cameraBadge?.remove();
+  emitStateChanged();
 }
 
 /**
@@ -144,6 +200,12 @@ export function removePlayerListIcon(id) {
  * @returns {void}
  */
 export function clearPlayerListIcons() {
+  raisedHands.clear();
+  urgentUsers.clear();
+  localQueue.clear();
+  // Remove all camera queue badges and cinematic badges
+  document.querySelectorAll('.raise-my-hand-queue-badge').forEach(badge => badge.remove());
+  emitStateChanged();
   document.querySelectorAll(`.player-name > .raise-my-hand-indicator`).forEach(icon => {
     // Clear any pending timeout
     if (icon.dataset.timeoutId) {
@@ -257,4 +319,205 @@ export async function createXCardPopout(id) {
   }
 
   await Promise.all(promises);
+}
+
+// --- Queue Handlers ---
+
+/**
+ * Get the local queue mirror instance.
+ * @returns {QueueState}
+ */
+export function getLocalQueue() {
+  return localQueue;
+}
+
+/**
+ * Get the set of user IDs with raised hands.
+ * @returns {Set<string>}
+ */
+export function getRaisedHands() {
+  return raisedHands;
+}
+
+/**
+ * Get the set of user IDs marked as urgent speakers.
+ * @returns {Set<string>}
+ */
+export function getUrgentUsers() {
+  return urgentUsers;
+}
+
+/**
+ * Handle a request to join the speaking queue.
+ * Only the active GM processes this; other GMs and players ignore it.
+ * @param {string} userId - The user ID requesting to join
+ * @returns {void}
+ */
+export function requestQueueJoin(userId) {
+  if (game.users.activeGM?.id !== game.userId) return;
+  const gmQueue = getGmQueue();
+  if (gmQueue.add(userId) !== -1) {
+    broadcastQueueState();
+  }
+}
+
+/**
+ * Handle a request to remove a user from the speaking queue.
+ * Only the active GM processes this; other GMs and players ignore it.
+ * @param {string} userId - The user ID to remove
+ * @returns {void}
+ */
+export function requestQueueRemove(userId) {
+  if (game.users.activeGM?.id !== game.userId) return;
+  const gmQueue = getGmQueue();
+  if (gmQueue.remove(userId)) {
+    getGmUrgentUsers().delete(userId);
+    broadcastQueueState();
+  }
+}
+
+/**
+ * Handle a request to toggle urgent status for a user in the queue.
+ * If the user is not in the queue, they are added first.
+ * Only the active GM processes this; other GMs and players ignore it.
+ * @param {string} userId - The user ID requesting urgent status
+ * @returns {void}
+ */
+export function requestUrgent(userId) {
+  if (game.users.activeGM?.id !== game.userId) return;
+  const gmQueue = getGmQueue();
+  const gmUrgent = getGmUrgentUsers();
+
+  // Add to queue if not already present
+  gmQueue.add(userId);
+
+  // Toggle urgent status
+  if (gmUrgent.has(userId)) {
+    gmUrgent.delete(userId);
+  } else {
+    gmUrgent.add(userId);
+  }
+  broadcastQueueState();
+}
+
+/**
+ * Sync the queue state from the GM to all clients.
+ * Updates the local queue mirror and refreshes queue position badges
+ * on player list icons and camera views.
+ * @param {string[]} orderedUserIds - The queue in order
+ * @param {string[]} urgentUserIds - The user IDs marked as urgent
+ * @returns {void}
+ */
+export function syncQueueState(orderedUserIds, urgentUserIds = []) {
+  localQueue.replace(orderedUserIds);
+  urgentUsers.clear();
+  for (const id of urgentUserIds) urgentUsers.add(id);
+
+  // Update queue position badges, speaking state, and urgent state on all existing player list icons
+  document.querySelectorAll('.raise-my-hand-indicator').forEach(icon => {
+    const userId = icon.dataset.userId;
+    const position = localQueue.getPosition(userId);
+    const isSpeaking = position === 1;
+
+    // Swap icon between megaphone (speaking) and hand (waiting)
+    icon.classList.toggle('fa-bullhorn', isSpeaking);
+    icon.classList.toggle('fa-hand-paper', !isSpeaking);
+    icon.classList.toggle('speaking', isSpeaking);
+
+    // Position 1 = speaking (no number), position 2+ = show position - 1
+    if (position > 1) {
+      icon.dataset.queuePosition = position - 1;
+    } else {
+      delete icon.dataset.queuePosition;
+    }
+    // Apply or remove urgent class
+    icon.classList.toggle('urgent', urgentUsers.has(userId));
+  });
+
+  // Update queue position badges on camera views and cinematic
+  updateCameraQueueBadges();
+  emitStateChanged();
+}
+
+/**
+ * Re-apply raised hand indicators on the player list after a re-render.
+ * In toggle mode, recreates indicators for all users whose hand is raised
+ * but whose DOM elements were destroyed by a player list re-render.
+ * In queue+toggle mode, also restores queue position badges.
+ * @returns {void}
+ */
+export function reapplyQueueIndicators() {
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  if (!handSettings.general.isToggle) return;
+  if (!handSettings.general.notificationModes.has("playerList")) return;
+
+  const useQueue = game.settings.get(MODULE_ID, "enableQueue");
+  const users = useQueue ? localQueue.getAll() : [...raisedHands];
+
+  for (const userId of users) {
+    const playerName = document.querySelector(`[data-user-id="${userId}"] > .player-name`);
+    if (!playerName) continue;
+    if (playerName.querySelector('.raise-my-hand-indicator')) continue;
+
+    const position = useQueue ? localQueue.getPosition(userId) : 0;
+    const isSpeaking = position === 1;
+    const iconClass = isSpeaking ? 'fa-bullhorn' : 'fa-hand-paper';
+
+    const icon = Object.assign(document.createElement('span'), {
+      className: `raise-my-hand-indicator fas ${iconClass}`
+    });
+    icon.dataset.userId = userId;
+
+    if (useQueue) {
+      if (isSpeaking) {
+        icon.classList.add('speaking');
+      } else if (position > 1) {
+        icon.dataset.queuePosition = position - 1;
+      }
+      if (urgentUsers.has(userId)) {
+        icon.classList.add('urgent');
+      }
+    }
+
+    playerName.appendChild(icon);
+  }
+  emitStateChanged();
+}
+
+/**
+ * Update or remove queue position badges on all camera views.
+ * Adds a badge overlay to each camera-view element whose user is in the queue,
+ * and removes badges for users no longer in the queue.
+ * @returns {void}
+ */
+export function updateCameraQueueBadges() {
+  document.querySelectorAll('#camera-views .camera-view').forEach(cameraView => {
+    const userId = cameraView.dataset.user;
+    if (!userId) return;
+
+    let badge = cameraView.querySelector('.raise-my-hand-queue-badge');
+    const position = localQueue.getPosition(userId);
+
+    if (position > 0) {
+      const isSpeaking = position === 1;
+      const iconClass = isSpeaking ? 'fa-bullhorn' : 'fa-hand-paper';
+
+      if (!badge) {
+        badge = Object.assign(document.createElement('div'), {
+          className: 'raise-my-hand-queue-badge'
+        });
+        badge.innerHTML = `<i class="fas ${iconClass}"></i><span class="queue-position"></span>`;
+        cameraView.appendChild(badge);
+      } else {
+        // Update icon class if it changed
+        const icon = badge.querySelector('i');
+        icon.className = `fas ${iconClass}`;
+      }
+      badge.querySelector('.queue-position').textContent = isSpeaking ? '' : position - 1;
+      badge.classList.toggle('speaking', isSpeaking);
+      badge.classList.toggle('urgent', urgentUsers.has(userId));
+    } else if (badge) {
+      badge.remove();
+    }
+  });
 }

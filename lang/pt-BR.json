@@ -31,6 +31,9 @@
         "toolclip": {
           "heading": "Mostrar Cartão-X"
         }
+      },
+      "urgent-speak": {
+        "name": "Fala Urgente"
       }
     },
     "settings": {
@@ -43,6 +46,10 @@
         "name": "Configurações do Cartão-X",
         "label": "Configurar Cartão-X",
         "hint": "Configurar os modos de notificação habilitados do Cartão-X e suas subconfigurações."
+      },
+      "enableQueue": {
+        "name": "Fila de Fala",
+        "hint": "Ativa uma fila de fala no modo alternância. Mostra a posição nos ícones de mão."
       },
       "notificationTimeout": {
         "name": "Intervalo de Notificação",

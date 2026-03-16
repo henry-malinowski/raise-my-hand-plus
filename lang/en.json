@@ -32,6 +32,9 @@
         "toolclip": {
           "heading": "Show X-Card"
         }
+      },
+      "urgent-speak": {
+        "name": "Urgent Speak"
       }
     },
     "settings": {
@@ -44,6 +47,10 @@
         "name": "X-Card Settings",
         "label": "Configure X-Card",
         "hint": "Configure X-Card enabled notification modes and their sub-settings."
+      },
+      "enableQueue": {
+        "name": "Speaking Queue",
+        "hint": "Enable a FIFO speaking queue when toggle mode is on. Shows queue position on hand icons and adds a queue panel."
       },
       "notificationTimeout": {
         "name": "Notification Timeout",

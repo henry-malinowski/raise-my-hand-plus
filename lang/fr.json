@@ -31,6 +31,9 @@
         "toolclip": {
           "heading": "Montrer la Carte-X"
         }
+      },
+      "urgent-speak": {
+        "name": "Parole Urgente"
       }
     },
     "settings": {
@@ -43,6 +46,10 @@
         "name": "Paramètres de la Carte-X",
         "label": "Configurer la Carte-X",
         "hint": "Configuration des notifications de la Carte-X."
+      },
+      "enableQueue": {
+        "name": "File d'attente de parole",
+        "hint": "Active une file d'attente en mode bascule. Affiche la position sur les icônes de main."
       },
       "notificationTimeout": {
         "name": "Expiration de notification",

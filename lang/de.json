@@ -31,6 +31,9 @@
         "toolclip": {
           "heading": "X-Karte zeigen"
         }
+      },
+      "urgent-speak": {
+        "name": "Dringend Sprechen"
       }
     },
     "settings": {
@@ -43,6 +46,10 @@
         "name": "X-Karten-Einstellungen",
         "label": "X-Karte konfigurieren",
         "hint": "Konfiguriere aktivierte Benachrichtigungsmodi der X-Karte und deren Untereinstellungen."
+      },
+      "enableQueue": {
+        "name": "Sprechreihenfolge",
+        "hint": "Aktiviert eine Sprechreihenfolge im Toggle-Modus. Zeigt die Position auf Handsymbolen an."
       },
       "notificationTimeout": {
         "name": "Abklingzeit",

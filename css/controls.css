@@ -12,7 +12,7 @@ button.control.tool[data-tool="raise-hand"] {
   }
 }
 
-/* X-Card control button */
+/* X-Card / Urgent Speak control button */
 button.control.tool[data-tool="show-xcard"] {
   position: relative;
 
@@ -22,6 +22,21 @@ button.control.tool[data-tool="show-xcard"] {
     font-size: 1.6em;
     /* Base size for the button */
     text-shadow: var(--raise-my-hand-icon-shadow);
+  }
+
+  /* When repurposed as urgent speak (hand icon), match the raise-hand button style */
+  &.fa-hand-paper::before {
+    font-size: 1.15em;
+  }
+
+  &.fa-hand-paper::after {
+    display: none;
+  }
+
+  &.fa-hand-paper:hover::before {
+    animation: none;
+    transform: translateY(-0.125em);
+    transition: transform 0.2s ease-out;
   }
 
   &::after {
