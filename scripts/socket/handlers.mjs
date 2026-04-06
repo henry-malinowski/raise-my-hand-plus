@@ -391,25 +391,21 @@ export function requestQueueRemove(userId) {
 }
 
 /**
- * Handle a request to toggle urgent status for a user in the queue.
- * If the user is not in the queue, they are added first.
- * Only the active GM processes this; other GMs and players ignore it.
+ * Handle a request to toggle urgent status for a user.
+ * Urgent is independent of the queue — just a red hand indicator.
+ * Only the active GM processes this.
  * @param {string} userId - The user ID requesting urgent status
  * @returns {void}
  */
 export function requestUrgent(userId) {
   if (game.users.activeGM?.id !== game.userId) return;
-  const gmQueue = getGmQueue();
   const gmUrgent = getGmUrgentUsers();
 
-  // Add to queue if not already present
-  gmQueue.add(userId);
-
-  // Toggle urgent status
   if (gmUrgent.has(userId)) {
     gmUrgent.delete(userId);
   } else {
     gmUrgent.add(userId);
+    getGmQueue().remove(userId);
   }
   broadcastQueueState();
 }
@@ -511,8 +507,10 @@ export function updateCameraQueueBadges() {
 
     let badge = cameraView.querySelector('.raise-my-hand-queue-badge');
     const position = localQueue.getPosition(userId);
+    const isUrgent = urgentUsers.has(userId);
+    const showBadge = position > 0 || isUrgent;
 
-    if (position > 0) {
+    if (showBadge) {
       const isSpeaking = position === 1;
       const iconClass = isSpeaking ? 'fa-bullhorn' : 'fa-hand-paper';
 
@@ -523,13 +521,12 @@ export function updateCameraQueueBadges() {
         badge.innerHTML = `<i class="fas ${iconClass}"></i><span class="queue-position"></span>`;
         cameraView.appendChild(badge);
       } else {
-        // Update icon class if it changed
         const icon = badge.querySelector('i');
         icon.className = `fas ${iconClass}`;
       }
-      badge.querySelector('.queue-position').textContent = isSpeaking ? '' : position - 1;
+      badge.querySelector('.queue-position').textContent = (!isSpeaking && position > 1) ? position - 1 : '';
       badge.classList.toggle('speaking', isSpeaking);
-      badge.classList.toggle('urgent', urgentUsers.has(userId));
+      badge.classList.toggle('urgent', isUrgent);
     } else if (badge) {
       badge.remove();
     }
