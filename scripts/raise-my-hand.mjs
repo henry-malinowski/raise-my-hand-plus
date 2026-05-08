@@ -8,7 +8,8 @@ import { default as HandConfig } from "./applications/settings/hand-config.mjs";
 import { default as XCardConfig } from "./applications/settings/xcard-config.mjs";
 import HandSettingsData from "./data/settings/HandSettingsData.mjs";
 import XCardSettingsData from "./data/settings/XCardSettingsData.mjs";
-import { initSocket, getSocket, getGmQueue, getGmUrgentUsers, broadcastQueueState } from "./socket/socket.mjs";
+import * as handHandlers from "./handlers/hand.mjs";
+import { initSocket, getSocket, getGmQueue, getGmUrgentUsers, getGmSpeakerUserId, setGmSpeakerUserId, setGmSceneActive, broadcastQueueState } from "./socket/socket.mjs";
 import { clearPlayerListIcons, reapplyQueueIndicators, updateCameraQueueBadges, removePlayerListIcon } from "./socket/handlers.mjs";
 import { registerTokenControls, getLowerHandContextOptions } from "./controls.mjs";
 import { registerHandlebarsHelpers } from "./applications/handlebars.mjs";
@@ -85,16 +86,17 @@ function registerSettings() {
     onChange: (value) => {
       // Re-render controls so the X-card/urgent button updates
       ui.controls.render({reset: true});
+      updateCameraQueueBadges();
 
       // Clear queue if queue was disabled
       if (!value) {
         if (game.users.activeGM?.id === game.userId) {
           const gmQueue = getGmQueue();
-          if (gmQueue.length > 0) {
-            gmQueue.clear();
-            getGmUrgentUsers().clear();
-            broadcastQueueState();
-          }
+          gmQueue.clear();
+          getGmUrgentUsers().clear();
+          setGmSpeakerUserId(null);
+          setGmSceneActive(false);
+          broadcastQueueState();
         }
       }
     }
@@ -115,6 +117,25 @@ function registerSettings() {
     restricted: true
   });
 
+  game.settings.register(MODULE_ID, 'speakerIndication', {
+    name: "raise-my-hand.settings.speakerIndication.name",
+    hint: "raise-my-hand.settings.speakerIndication.hint",
+    scope: 'world',
+    config: true,
+    default: true,
+    type: Boolean,
+    restricted: true,
+    onChange: () => updateCameraQueueBadges()
+  });
+
+  game.settings.register(MODULE_ID, 'speakerIndicationPosition', {
+    scope: 'client',
+    config: false,
+    default: null,
+    type: Object,
+    onChange: () => updateCameraQueueBadges()
+  });
+
   // Hand Settings object (hidden from main config, shown in dedicated menu)
   game.settings.register(MODULE_ID, "handSettings", {
     scope: 'world',
@@ -125,6 +146,7 @@ function registerSettings() {
     onChange: (value, options, userId) => {
       // Retrigger the 'getSceneControlButtons' hook to update controls
       ui.controls.render({reset: true});
+      updateCameraQueueBadges();
 
       // if the new mode is not a toggle, clear the player list icons
       if (!value.general.isToggle) {
@@ -136,11 +158,11 @@ function registerSettings() {
       if (!value.general.isToggle) {
         if (game.users.activeGM?.id === game.userId) {
           const gmQueue = getGmQueue();
-          if (gmQueue.length > 0) {
-            gmQueue.clear();
-            getGmUrgentUsers().clear();
-            broadcastQueueState();
-          }
+          gmQueue.clear();
+          getGmUrgentUsers().clear();
+          setGmSpeakerUserId(null);
+          setGmSceneActive(false);
+          broadcastQueueState();
         }
       }
     },
@@ -217,6 +239,18 @@ function registerKeybindings() {
     },
     reservedModifiers: []
   });  
+
+  game.keybindings.register(MODULE_ID, "snatch-spotlight", {
+    name: 'raise-my-hand.controls.snatch-spotlight.name',
+    hint: 'raise-my-hand.controls.snatch-spotlight.hint',
+    editable: [{ key: "Space", modifiers: []}],
+    onDown: (context) => {
+      if (context.event?.repeat) return false;
+      const handled = handHandlers.snatchSpotlight();
+      return handled;
+    },
+    reservedModifiers: []
+  });
 }
 
 /**
@@ -398,6 +432,7 @@ function onUserDisconnected(user, context) {
     const gmQueue = getGmQueue();
     if (gmQueue.remove(user.id)) {
       getGmUrgentUsers().delete(user.id);
+      if (getGmSpeakerUserId() === user.id) setGmSpeakerUserId(null);
       broadcastQueueState();
     }
   }

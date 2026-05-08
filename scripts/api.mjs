@@ -1,5 +1,5 @@
 import { MODULE_ID } from "./raise-my-hand.mjs";
-import { getLocalQueue, getRaisedHands, getUrgentUsers, isHandRaised as _isHandRaised } from "./socket/handlers.mjs";
+import { getLocalQueue, getRaisedHands, getUrgentUsers, getSpeakerUserId as _getSpeakerUserId, isHandRaised as _isHandRaised } from "./socket/handlers.mjs";
 import * as handHandlers from "./handlers/hand.mjs";
 
 /**
@@ -28,6 +28,14 @@ export const api = {
    */
   getUrgentUsers() {
     return getUrgentUsers();
+  },
+
+  /**
+   * Get the current speaker user ID.
+   * @returns {string|null}
+   */
+  getSpeakerUserId() {
+    return _getSpeakerUserId();
   },
 
   /**
@@ -116,5 +124,13 @@ export const api = {
    */
   urgentSpeak() {
     return handHandlers.urgentSpeak();
+  },
+
+  /**
+   * Toggle the current user's spotlight.
+   * @returns {void}
+   */
+  snatchSpotlight() {
+    return handHandlers.snatchSpotlight();
   }
 };

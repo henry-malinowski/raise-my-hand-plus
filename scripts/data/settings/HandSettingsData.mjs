@@ -11,10 +11,13 @@ import ScopeField from "./ScopeField.mjs";
  *
  * @property {Object} general - General hand raising settings
  * @property {boolean} general.isToggle - Whether hand raising is a toggle (true) or button (false)
- * @property {Set<string>} general.notificationModes - Set of enabled notification modes: "playerList", "aural", "popout", "ui", "chat"
+ * @property {Set<string>} general.notificationModes - Set of enabled notification modes: "playerList", "camera", "aural", "popout", "ui", "chat"
  * @property {Object} playerList - Player list icon settings
  * @property {"gm-only"|"all-players"} playerList.scope - Who sees the player list icon
  * @property {number} playerList.holdTime - How long to hold the icon in non-toggle mode (0-60 seconds)
+ * @property {Object} camera - Camera view hand indicator settings
+ * @property {"gm-only"|"all-players"} camera.scope - Who sees the camera hand indicator
+ * @property {number} camera.holdTime - How long to hold the indicator in non-toggle mode (0-60 seconds)
  * @property {Object} aural - Sound notification settings
  * @property {"gm-only"|"all-players"} aural.scope - Who hears the sound
  * @property {"default"|"custom"} aural.source - Sound source type
@@ -46,6 +49,7 @@ export default class HandSettingsData extends DataModel {
         notificationModes: new SetField(new StringField({
           choices: {
             "playerList": "raise-my-hand.settings.HAND.FIELDS.general.notificationModes.choices.playerList",
+            "camera": "raise-my-hand.settings.HAND.FIELDS.general.notificationModes.choices.camera",
             "aural": "raise-my-hand.settings.HAND.FIELDS.general.notificationModes.choices.aural",
             "popout": "raise-my-hand.settings.HAND.FIELDS.general.notificationModes.choices.popout",
             "ui": "raise-my-hand.settings.HAND.FIELDS.general.notificationModes.choices.ui",
@@ -54,6 +58,10 @@ export default class HandSettingsData extends DataModel {
         }), {initial: ["playerList", "aural"]})
       }),
       playerList: new SchemaField({
+        scope: new ScopeField(),
+        holdTime: new NumberField({required: true, initial: 10, min: 0, max: 60, step: 1})
+      }),
+      camera: new SchemaField({
         scope: new ScopeField(),
         holdTime: new NumberField({required: true, initial: 10, min: 0, max: 60, step: 1})
       }),

@@ -12,7 +12,7 @@ import QueueState from "../data/QueueState.mjs";
 let socket = null;
 
 /**
- * The authoritative speaking queue, only meaningful on the active GM client.
+ * The authoritative scene participant list, only meaningful on the active GM client.
  * @type {QueueState}
  * @private
  */
@@ -24,6 +24,22 @@ const gmQueue = new QueueState();
  * @private
  */
 const gmUrgentUsers = new Set();
+
+/**
+ * The authoritative current speaker, only meaningful on the active GM client.
+ * Null means the spotlight is available.
+ * @type {string|null}
+ * @private
+ */
+let gmSpeakerUserId = null;
+
+/**
+ * Whether the GM-authoritative RP scene is currently open for participants.
+ * Only meaningful on the active GM client.
+ * @type {boolean}
+ * @private
+ */
+let gmSceneActive = false;
 
 /**
  * Get the socketlib socket instance for this module.
@@ -43,7 +59,7 @@ export function getActiveGmUserIds() {
 }
 
 /**
- * Get the GM-authoritative speaking queue instance.
+ * Get the GM-authoritative scene participant list.
  * Only meaningful on the active GM client.
  * @returns {QueueState}
  */
@@ -61,13 +77,47 @@ export function getGmUrgentUsers() {
 }
 
 /**
+ * Get the GM-authoritative current speaker user ID.
+ * @returns {string|null}
+ */
+export function getGmSpeakerUserId() {
+  return gmSpeakerUserId;
+}
+
+/**
+ * Set the GM-authoritative current speaker user ID.
+ * @param {string|null} userId - The speaker user ID, or null if no one is speaking.
+ * @returns {void}
+ */
+export function setGmSpeakerUserId(userId) {
+  gmSpeakerUserId = userId;
+}
+
+/**
+ * Check whether the GM-authoritative RP scene is active.
+ * @returns {boolean}
+ */
+export function isGmSceneActive() {
+  return gmSceneActive;
+}
+
+/**
+ * Set whether the GM-authoritative RP scene is active.
+ * @param {boolean} active - True if players can join the RP scene.
+ * @returns {void}
+ */
+export function setGmSceneActive(active) {
+  gmSceneActive = Boolean(active);
+}
+
+/**
  * Broadcast the current GM queue state to all connected clients.
  * Should only be called from the active GM client after mutating the queue.
  * @returns {void}
  */
 export function broadcastQueueState() {
   if (!socket) return;
-  socket.executeForEveryone(socketHandlers.syncQueueState, gmQueue.getAll(), [...gmUrgentUsers]);
+  socket.executeForEveryone(socketHandlers.syncQueueState, gmQueue.getAll(), [...gmUrgentUsers], gmSpeakerUserId, gmSceneActive);
 }
 
 /**
@@ -109,6 +159,7 @@ export function initSocket() {
 
   socket.register("createUiNotification", socketHandlers.createUiNotification);
   socket.register("appendPlayerListIcon", socketHandlers.appendPlayerListIcon);
+  socket.register("appendCameraIndicator", socketHandlers.appendCameraIndicator);
   socket.register("removePlayerListIcon", socketHandlers.removePlayerListIcon);
   socket.register("clearPlayerListIcons", socketHandlers.clearPlayerListIcons);
   socket.register("createHandPopout", socketHandlers.createHandPopout);
@@ -121,5 +172,10 @@ export function initSocket() {
   socket.register("requestQueueJoin", socketHandlers.requestQueueJoin);
   socket.register("requestQueueRemove", socketHandlers.requestQueueRemove);
   socket.register("requestUrgent", socketHandlers.requestUrgent);
+  socket.register("requestSpotlightToggle", socketHandlers.requestSpotlightToggle);
+  socket.register("requestSceneStart", socketHandlers.requestSceneStart);
+  socket.register("requestSceneEnd", socketHandlers.requestSceneEnd);
+  socket.register("showSceneStartRequestIndication", socketHandlers.showSceneStartRequestIndication);
+  socket.register("clearSceneStartRequestIndication", socketHandlers.clearSceneStartRequestIndication);
   socket.register("syncQueueState", socketHandlers.syncQueueState);
 }

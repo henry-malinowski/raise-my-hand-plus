@@ -5,7 +5,7 @@
 const MODULE_ID = 'raise-my-hand';
 import * as handHandlers from "./handlers/hand.mjs";
 import * as xcardHandlers from "./handlers/xcard.mjs";
-import { isHandRaised } from "./socket/handlers.mjs";
+import { isHandRaised, isSceneActive } from "./socket/handlers.mjs";
 import HandSettingsData from "./data/settings/HandSettingsData.mjs";
 import XCardSettingsData from "./data/settings/XCardSettingsData.mjs";
 import ScopeField from "./data/settings/ScopeField.mjs";
@@ -23,6 +23,9 @@ const {KeyboardManager} = foundry.helpers.interaction;
 export function registerTokenControls(controls) {
   const tokenControlsTools = controls['tokens'].tools;
   const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  const isQueueMode = handSettings.general.isToggle && game.settings.get(MODULE_ID, "enableQueue");
+  const isGmSceneController = isQueueMode && game.user.isGM;
+  const playerSceneControlsVisible = !isQueueMode || !game.user.isGM;
 
   /**
    * The raise hand control.
@@ -39,9 +42,10 @@ export function registerTokenControls(controls) {
     order: Object.keys(tokenControlsTools).length,
     button: !handSettings.general.isToggle,
     toggle: handSettings.general.isToggle,
-    active: false, // initially deasserted, unused for button mode
-    visible: handSettings.general.notificationModes.size > 0
-      || (handSettings.general.isToggle && game.settings.get(MODULE_ID, "enableQueue")),
+    active: isQueueMode && isSceneActive() && !game.user.isGM && isHandRaised(game.userId, handSettings),
+    visible: !isGmSceneController
+      && playerSceneControlsVisible
+      && (handSettings.general.notificationModes.size > 0 || isQueueMode),
     ...(handSettings.general.isToggle
       ? { onChange: (event, active) => handHandlers.toggle(active) }
       : { onChange: (event, active) => handHandlers.raise() }
@@ -62,14 +66,13 @@ export function registerTokenControls(controls) {
    * @type {SceneControl}
    */
   const xCardSettings = game.settings.get(MODULE_ID, "xCardSettings");
-  const isQueueMode = handSettings.general.isToggle && game.settings.get(MODULE_ID, "enableQueue");
   tokenControlsTools['show-xcard'] = {
     name: 'show-xcard',
     title: isQueueMode ? 'raise-my-hand.controls.urgent-speak.name' : 'raise-my-hand.controls.show-xcard.name',
     icon: isQueueMode ? 'fas fa-hand-paper' : 'fas fa-times',
     order: Object.keys(tokenControlsTools).length,
     button: true,
-    visible: isQueueMode || xCardSettings.isEnabled,
+    visible: isQueueMode ? !game.user.isGM : xCardSettings.isEnabled,
     onChange: isQueueMode
       ? (event, active) => handHandlers.urgentSpeak()
       : (event, active) => xcardHandlers.showXCardDialog(),
@@ -79,6 +82,19 @@ export function registerTokenControls(controls) {
       items: SceneControls.buildToolclipItems(buildXCardToolclipItems(xCardSettings))
     }
   };
+
+  if (isQueueMode && game.user.isGM) {
+    const active = isSceneActive();
+    tokenControlsTools['rp-scene'] = {
+      name: 'rp-scene',
+      title: active ? 'raise-my-hand.controls.rp-scene.end' : 'raise-my-hand.controls.rp-scene.start',
+      icon: active ? 'fas fa-stop' : 'fas fa-play',
+      order: Object.keys(tokenControlsTools).length,
+      button: true,
+      visible: true,
+      onChange: () => handHandlers.toggleRpScene()
+    };
+  }
 }
 
 /**

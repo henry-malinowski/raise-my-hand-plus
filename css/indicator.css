@@ -20,7 +20,7 @@
     text-shadow: var(--raise-my-hand-icon-shadow);
   }
 
-  /* Queue position badge */
+  /* Legacy numbered badge */
   &[data-queue-position]::after {
     content: attr(data-queue-position);
     position: absolute;

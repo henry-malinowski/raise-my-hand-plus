@@ -5,3 +5,4 @@
 @import "indicator.css" layer(applications);
 @import "controls.css" layer(applications);
 @import "queue.css" layer(applications);
+@import "speaker-indication.css" layer(applications);

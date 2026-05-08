@@ -1,5 +1,5 @@
 /**
- * Simple FIFO queue for tracking speaking order.
+ * Simple ordered list for tracking scene participants.
  * This is transient session state (not persisted to settings).
  * The GM client holds the authoritative instance; player clients hold read-only mirrors.
  */
