@@ -181,6 +181,20 @@ function getSceneIndicationColor(type) {
 }
 
 /**
+ * Pick the next participant who should receive the spotlight.
+ * Urgent hands take priority over yellow hands; the releasing speaker is skipped.
+ * @param {string|null} previousSpeakerUserId - The speaker who just released spotlight.
+ * @returns {string|null}
+ * @private
+ */
+function getNextSpotlightUserId(previousSpeakerUserId = null) {
+  const gmQueue = getGmQueue();
+  const gmUrgent = getGmUrgentUsers();
+  const candidates = gmQueue.getAll().filter(id => id !== previousSpeakerUserId);
+  return candidates.find(id => gmUrgent.has(id)) ?? candidates[0] ?? null;
+}
+
+/**
  * Remove the speaker indication overlay.
  * @returns {void}
  */
@@ -1070,7 +1084,9 @@ export function requestQueueRemove(userId) {
   if (gmQueue.remove(userId)) {
     getGmUrgentUsers().delete(userId);
     if (getGmSpeakerUserId() === userId) {
-      setGmSpeakerUserId(null);
+      const nextSpeaker = getNextSpotlightUserId(userId);
+      if (nextSpeaker) getGmUrgentUsers().delete(nextSpeaker);
+      setGmSpeakerUserId(nextSpeaker);
     }
     if (isGmSceneActive()) {
       broadcastQueueState();
@@ -1124,7 +1140,9 @@ export function requestSpotlightToggle(userId) {
   const currentSpeaker = getGmSpeakerUserId();
   if (currentSpeaker === userId) {
     getGmUrgentUsers().delete(userId);
-    setGmSpeakerUserId(null);
+    const nextSpeaker = getNextSpotlightUserId(userId);
+    if (nextSpeaker) getGmUrgentUsers().delete(nextSpeaker);
+    setGmSpeakerUserId(nextSpeaker);
     broadcastQueueState();
     return;
   }

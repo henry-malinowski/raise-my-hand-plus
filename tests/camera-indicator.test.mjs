@@ -34,7 +34,7 @@ class DataModel {
   }
 
   static get schema() {
-    this._schema ??= {fields: this.defineSchema()};
+    this._schema ??= { fields: this.defineSchema() };
     return this._schema;
   }
 
@@ -43,7 +43,7 @@ class DataModel {
   }
 
   toObject() {
-    return {...this};
+    return { ...this };
   }
 }
 
@@ -277,7 +277,7 @@ class FakeDocument {
     return [];
   }
 
-  addCameraView(userId, {outsideDock = false} = {}) {
+  addCameraView(userId, { outsideDock = false } = {}) {
     const cameraView = new FakeElement("div");
     cameraView.className = "camera-view";
     cameraView.dataset.user = userId;
@@ -288,10 +288,10 @@ class FakeDocument {
 }
 
 globalThis.foundry = {
-  abstract: {DataModel},
+  abstract: { DataModel },
   applications: {
     api: {
-      ApplicationV2: class {},
+      ApplicationV2: class { },
       HandlebarsApplicationMixin: Base => Base
     },
     handlebars: {
@@ -303,7 +303,7 @@ globalThis.foundry = {
       }
     },
     ux: {
-      FormDataExtended: class {}
+      FormDataExtended: class { }
     }
   },
   data: {
@@ -324,7 +324,7 @@ globalThis.foundry = {
       }
     },
     Localization: {
-      localizeDataModel: () => {}
+      localizeDataModel: () => { }
     }
   },
   utils: {
@@ -334,15 +334,15 @@ globalThis.foundry = {
 };
 
 globalThis.Hooks = {
-  callAll: () => {},
-  once: () => {},
-  on: () => {}
+  callAll: () => { },
+  once: () => { },
+  on: () => { }
 };
-globalThis.Handlebars = {registerHelper: () => {}};
+globalThis.Handlebars = { registerHelper: () => { } };
 const renderCalls = [];
 globalThis.ui = {
-  controls: {controls: {tokens: {tools: {}}}, render: options => renderCalls.push(options ?? {})},
-  notifications: {info: () => {}}
+  controls: { controls: { tokens: { tools: {} } }, render: options => renderCalls.push(options ?? {}) },
+  notifications: { info: () => { } }
 };
 globalThis.window = {
   innerWidth: 1280,
@@ -365,14 +365,14 @@ const settingsState = {
   enableQueue: false,
   speakerIndication: true,
   speakerIndicationPosition: null,
-  xCardSettings: {isEnabled: false, scope: "all-players", anonymousWarning: false},
+  xCardSettings: { isEnabled: false, scope: "all-players", anonymousWarning: false },
   handSettings: {
     general: {
       isToggle: true,
       notificationModes: new Set(["camera"])
     },
-    playerList: {scope: "all-players"},
-    camera: {scope: "all-players"}
+    playerList: { scope: "all-players" },
+    camera: { scope: "all-players" }
   }
 };
 const settingWrites = [];
@@ -390,11 +390,11 @@ globalThis.game = {
       return key;
     }
   },
-  keybindings: {register: () => {}, get: () => []},
-  modules: {get: () => ({api: null})},
+  keybindings: { register: () => { }, get: () => [] },
+  modules: { get: () => ({ api: null }) },
   settings: {
-    register: () => {},
-    registerMenu: () => {},
+    register: () => { },
+    registerMenu: () => { },
     get: (_moduleId, key) => {
       if (key === "enableQueue") return settingsState.enableQueue;
       if (key === "speakerIndication") return settingsState.speakerIndication;
@@ -404,23 +404,23 @@ globalThis.game = {
       return undefined;
     },
     set: async (_moduleId, key, value) => {
-      settingWrites.push({key, value});
+      settingWrites.push({ key, value });
       settingsState[key] = value;
       return value;
     }
   },
   userId: "u1",
-  user: {id: "u1", isGM: false},
+  user: { id: "u1", isGM: false },
   users: {
-    activeGM: {id: "gm"},
-    get: id => ({id, name: "User", avatar: ""}),
+    activeGM: { id: "gm" },
+    get: id => ({ id, name: "User", avatar: "" }),
     filter: () => []
   }
 };
-globalThis.socketlib = {registerModule: () => ({register: () => {}})};
+globalThis.socketlib = { registerModule: () => ({ register: () => { } }) };
 globalThis.ChatMessage = {
   getWhisperRecipients: () => [],
-  create: () => {}
+  create: () => { }
 };
 globalThis.AudioHelper = {};
 
@@ -428,20 +428,20 @@ const handlers = await import("../scripts/socket/handlers.mjs");
 const socketState = await import("../scripts/socket/socket.mjs");
 const controlsModule = await import("../scripts/controls.mjs");
 const handHandlers = await import("../scripts/handlers/hand.mjs");
-const {default: HandSettingsData} = await import("../scripts/data/settings/HandSettingsData.mjs");
+const { default: HandSettingsData } = await import("../scripts/data/settings/HandSettingsData.mjs");
 
 test.beforeEach(() => {
   settingsState.enableQueue = false;
   settingsState.speakerIndication = true;
   settingsState.speakerIndicationPosition = null;
-  settingsState.xCardSettings = {isEnabled: false, scope: "all-players", anonymousWarning: false};
+  settingsState.xCardSettings = { isEnabled: false, scope: "all-players", anonymousWarning: false };
   settingsState.handSettings = {
     general: {
       isToggle: true,
       notificationModes: new Set(["camera"])
     },
-    playerList: {scope: "all-players"},
-    camera: {scope: "all-players"}
+    playerList: { scope: "all-players" },
+    camera: { scope: "all-players" }
   };
   settingWrites.length = 0;
   renderCalls.length = 0;
@@ -527,7 +527,7 @@ test("spotlight request blocks snatch while another player speaks", () => {
   assert.equal(socketState.getGmSpeakerUserId(), "u1");
 
   handlers.requestSpotlightToggle("u1");
-  assert.equal(socketState.getGmSpeakerUserId(), null);
+  assert.equal(socketState.getGmSpeakerUserId(), "u2");
   assert.deepEqual(socketState.getGmQueue().getAll(), ["u1", "u2"]);
 
   game.userId = "u1";
@@ -586,17 +586,14 @@ test("urgent hands block yellow spotlight until all urgent users have spoken", (
   assert.equal(socketState.getGmUrgentUsers().has("red1"), true);
 
   handlers.requestSpotlightToggle("red2");
-  assert.equal(socketState.getGmSpeakerUserId(), null);
+  assert.equal(socketState.getGmSpeakerUserId(), "red1");
+  assert.equal(socketState.getGmUrgentUsers().has("red1"), false);
 
   handlers.requestSpotlightToggle("yellow");
-  assert.equal(socketState.getGmSpeakerUserId(), null);
-
-  handlers.requestSpotlightToggle("red1");
   assert.equal(socketState.getGmSpeakerUserId(), "red1");
   assert.equal(socketState.getGmUrgentUsers().size, 0);
 
   handlers.requestSpotlightToggle("red1");
-  handlers.requestSpotlightToggle("yellow");
   assert.equal(socketState.getGmSpeakerUserId(), "yellow");
 
   game.userId = "u1";
@@ -610,7 +607,7 @@ test("urgent waiting indication is red and clears when no urgent hands remain", 
   game.userId = "u1";
   game.user.id = "u1";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: id, avatar: ""});
+  game.users.get = id => ({ id, name: id, avatar: "" });
 
   handlers.syncQueueState(["u1", "u2"], ["u2"], null, true);
 
@@ -626,7 +623,7 @@ test("urgent waiting indication is red and clears when no urgent hands remain", 
 
 test("urgent waiting indication stays visible while someone is speaking", () => {
   settingsState.enableQueue = true;
-  settingsState.speakerIndicationPosition = {x: 40, y: 88};
+  settingsState.speakerIndicationPosition = { x: 40, y: 88 };
   settingsState.handSettings.general.notificationModes = new Set(["camera"]);
   const document = new FakeDocument();
   globalThis.document = document;
@@ -635,7 +632,7 @@ test("urgent waiting indication stays visible while someone is speaking", () => 
   game.userId = "viewer";
   game.user.id = "viewer";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: id, avatar: ""});
+  game.users.get = id => ({ id, name: id, avatar: "" });
 
   handlers.syncQueueState(["speaker", "urgent"], ["urgent"], "speaker", true);
 
@@ -659,7 +656,7 @@ test("scene indications use status-specific colors", () => {
   game.userId = "viewer";
   game.user.id = "viewer";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: id, avatar: ""});
+  game.users.get = id => ({ id, name: id, avatar: "" });
 
   handlers.syncQueueState(["speaker"], [], "speaker", true);
   let overlay = document.querySelector("#raise-my-hand-speaker-indication");
@@ -670,7 +667,7 @@ test("scene indications use status-specific colors", () => {
   game.userId = "gm";
   game.user.id = "gm";
   game.user.isGM = true;
-  game.users.get = id => ({id, name: id === "u1" ? "Player One" : "GM", avatar: ""});
+  game.users.get = id => ({ id, name: id === "u1" ? "Player One" : "GM", avatar: "" });
   handlers.showSceneStartRequestIndication("u1");
   overlay = document.querySelector("#raise-my-hand-speaker-indication");
   assert.ok(overlay);
@@ -680,7 +677,7 @@ test("scene indications use status-specific colors", () => {
   game.userId = "u1";
   game.user.id = "u1";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: "Player One", avatar: ""});
+  game.users.get = id => ({ id, name: "Player One", avatar: "" });
   handlers.syncQueueState([], [], null, false);
   handlers.syncQueueState(["u1"], [], null, true);
   overlay = document.querySelector("#raise-my-hand-speaker-indication");
@@ -695,7 +692,7 @@ test("non-speaking scene indications do not show avatars", () => {
   game.userId = "viewer";
   game.user.id = "viewer";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: id, avatar: `icons/${id}.webp`});
+  game.users.get = id => ({ id, name: id, avatar: `icons/${id}.webp` });
 
   handlers.syncQueueState(["urgent"], ["urgent"], null, true);
 
@@ -723,7 +720,7 @@ test("speaking scene indication keeps avatar", () => {
   game.userId = "speaker";
   game.user.id = "speaker";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: id, avatar: `icons/${id}.webp`});
+  game.users.get = id => ({ id, name: id, avatar: `icons/${id}.webp` });
 
   handlers.syncQueueState(["speaker"], [], "speaker", true);
 
@@ -740,7 +737,7 @@ test("scene indication does not render screen border frame", () => {
   game.userId = "speaker";
   game.user.id = "speaker";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: id, avatar: ""});
+  game.users.get = id => ({ id, name: id, avatar: "" });
 
   handlers.syncQueueState(["speaker"], [], "speaker", true);
 
@@ -759,7 +756,7 @@ test("speaker and urgent indications align before dragging", () => {
   game.userId = "viewer";
   game.user.id = "viewer";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: id, avatar: ""});
+  game.users.get = id => ({ id, name: id, avatar: "" });
 
   handlers.syncQueueState(["speaker", "urgent"], ["urgent"], "speaker", true);
 
@@ -802,7 +799,7 @@ test("speaker indication uses assigned actor name for remote speaker", () => {
   document.addCameraView("u1");
   game.userId = "viewer";
   game.user.id = "viewer";
-  game.users.get = id => ({id, name: "Guy", character: {name: "Sir Garrick"}, avatar: ""});
+  game.users.get = id => ({ id, name: "Guy", character: { name: "Sir Garrick" }, avatar: "" });
 
   handlers.syncQueueState(["u1"], [], "u1", true);
 
@@ -813,7 +810,7 @@ test("speaker indication uses assigned actor name for remote speaker", () => {
 
 test("speaker indication uses saved client position", () => {
   settingsState.enableQueue = true;
-  settingsState.speakerIndicationPosition = {x: 144, y: 88};
+  settingsState.speakerIndicationPosition = { x: 144, y: 88 };
   settingsState.handSettings.general.notificationModes = new Set(["camera"]);
   const document = new FakeDocument();
   globalThis.document = document;
@@ -846,20 +843,20 @@ test("dragging speaker indication saves client position", () => {
     button: 0,
     clientX: 20,
     clientY: 24,
-    preventDefault: () => {}
+    preventDefault: () => { }
   });
-  window.dispatchEvent({type: "pointermove", clientX: 200, clientY: 160});
-  window.dispatchEvent({type: "pointerup", clientX: 200, clientY: 160});
+  window.dispatchEvent({ type: "pointermove", clientX: 200, clientY: 160 });
+  window.dispatchEvent({ type: "pointerup", clientX: 200, clientY: 160 });
 
   assert.deepEqual(settingWrites.at(-1), {
     key: "speakerIndicationPosition",
-    value: {x: 180, y: 136}
+    value: { x: 180, y: 136 }
   });
 });
 
 test("dragging urgent indication moves glued speaker pair", () => {
   settingsState.enableQueue = true;
-  settingsState.speakerIndicationPosition = {x: 40, y: 88};
+  settingsState.speakerIndicationPosition = { x: 40, y: 88 };
   settingsState.handSettings.general.notificationModes = new Set(["camera"]);
   const document = new FakeDocument();
   globalThis.document = document;
@@ -868,7 +865,7 @@ test("dragging urgent indication moves glued speaker pair", () => {
   game.userId = "viewer";
   game.user.id = "viewer";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: id, avatar: ""});
+  game.users.get = id => ({ id, name: id, avatar: "" });
 
   handlers.syncQueueState(["speaker", "urgent"], ["urgent"], "speaker", true);
 
@@ -884,11 +881,11 @@ test("dragging urgent indication moves glued speaker pair", () => {
     button: 0,
     clientX: 320,
     clientY: 100,
-    preventDefault: () => {},
-    stopPropagation: () => {}
+    preventDefault: () => { },
+    stopPropagation: () => { }
   });
-  window.dispatchEvent({type: "pointermove", clientX: 400, clientY: 150});
-  window.dispatchEvent({type: "pointerup", clientX: 400, clientY: 150, stopPropagation: () => {}});
+  window.dispatchEvent({ type: "pointermove", clientX: 400, clientY: 150 });
+  window.dispatchEvent({ type: "pointerup", clientX: 400, clientY: 150, stopPropagation: () => { } });
 
   assert.equal(speakerBanner.style.left, "120px");
   assert.equal(speakerBanner.style.top, "138px");
@@ -896,7 +893,7 @@ test("dragging urgent indication moves glued speaker pair", () => {
   assert.equal(urgentBanner.style.top, "138px");
   assert.deepEqual(settingWrites.at(-1), {
     key: "speakerIndicationPosition",
-    value: {x: 120, y: 138}
+    value: { x: 120, y: 138 }
   });
 });
 
@@ -907,7 +904,7 @@ test("gm rp scene controls replace hand controls in scene spotlight mode", () =>
   game.user.id = "gm";
   game.user.isGM = true;
 
-  const controls = {tokens: {tools: {}}};
+  const controls = { tokens: { tools: {} } };
   controlsModule.registerTokenControls(controls);
   ui.controls.controls = controls;
 
@@ -964,7 +961,7 @@ test("players see hand controls but no rp scene button while inactive", () => {
   socketState.setGmSceneActive(false);
   handlers.syncQueueState([], [], null, false);
 
-  const controls = {tokens: {tools: {}}};
+  const controls = { tokens: { tools: {} } };
   controlsModule.registerTokenControls(controls);
   ui.controls.controls = controls;
 
@@ -983,19 +980,19 @@ test("player hand raise before scene requests gm start without starting scene", 
   game.user.id = "u1";
   game.user.isGM = false;
   game.users.activeGM.id = "gm";
-  game.users.get = id => ({id, name: id === "u1" ? "Player One" : "GM", avatar: ""});
+  game.users.get = id => ({ id, name: id === "u1" ? "Player One" : "GM", avatar: "" });
   socketState.getGmQueue().clear();
   socketState.setGmSceneActive(false);
   handlers.syncQueueState([], [], null, false);
 
-  const controls = {tokens: {tools: {}}};
+  const controls = { tokens: { tools: {} } };
   controlsModule.registerTokenControls(controls);
   ui.controls.controls = controls;
-  const localUser = {userId: game.userId, id: game.user.id, isGM: game.user.isGM};
+  const localUser = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
   const fakeSocket = {
-    register: () => {},
+    register: () => { },
     executeForAllGMs: (handler, ...args) => {
-      const previous = {userId: game.userId, id: game.user.id, isGM: game.user.isGM};
+      const previous = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
       game.userId = "gm";
       game.user.id = "gm";
       game.user.isGM = true;
@@ -1005,7 +1002,7 @@ test("player hand raise before scene requests gm start without starting scene", 
       game.user.isGM = previous.isGM;
     },
     executeForEveryone: (handler, ...args) => {
-      const previous = {userId: game.userId, id: game.user.id, isGM: game.user.isGM};
+      const previous = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
       game.userId = localUser.userId;
       game.user.id = localUser.id;
       game.user.isGM = localUser.isGM;
@@ -1014,12 +1011,12 @@ test("player hand raise before scene requests gm start without starting scene", 
       game.user.id = previous.id;
       game.user.isGM = previous.isGM;
     },
-    executeAsUser: () => {}
+    executeAsUser: () => { }
   };
   socketlib.registerModule = () => fakeSocket;
   socketState.initSocket();
 
-  await handHandlers.raise({skipTimeout: true});
+  await handHandlers.raise({ skipTimeout: true });
 
   assert.equal(socketState.isGmSceneActive(), false);
   assert.equal(handlers.isSceneActive(), false);
@@ -1032,7 +1029,7 @@ test("player hand raise before scene requests gm start without starting scene", 
     "You want to start RP scene"
   );
 
-  game.users.get = id => ({id, name: "User", avatar: ""});
+  game.users.get = id => ({ id, name: "User", avatar: "" });
 });
 
 test("lowering pending hand removes pre-scene camera badge", () => {
@@ -1045,7 +1042,7 @@ test("lowering pending hand removes pre-scene camera badge", () => {
   game.user.id = "gm";
   game.user.isGM = true;
   game.users.activeGM.id = "gm";
-  game.users.get = id => ({id, name: id === "u1" ? "Player One" : "GM", avatar: ""});
+  game.users.get = id => ({ id, name: id === "u1" ? "Player One" : "GM", avatar: "" });
   socketState.getGmQueue().clear();
   socketState.setGmSceneActive(false);
 
@@ -1060,7 +1057,7 @@ test("lowering pending hand removes pre-scene camera badge", () => {
   game.userId = "u1";
   game.user.id = "u1";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: "User", avatar: ""});
+  game.users.get = id => ({ id, name: "User", avatar: "" });
 });
 
 test("gm sees indication when a player requests an rp scene", () => {
@@ -1072,7 +1069,7 @@ test("gm sees indication when a player requests an rp scene", () => {
   game.user.id = "gm";
   game.user.isGM = true;
   game.users.activeGM.id = "gm";
-  game.users.get = id => ({id, name: id === "u1" ? "Player One" : "GM", avatar: ""});
+  game.users.get = id => ({ id, name: id === "u1" ? "Player One" : "GM", avatar: "" });
   socketState.getGmQueue().clear();
   socketState.setGmSceneActive(false);
 
@@ -1088,7 +1085,7 @@ test("gm sees indication when a player requests an rp scene", () => {
   game.userId = "u1";
   game.user.id = "u1";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: "User", avatar: ""});
+  game.users.get = id => ({ id, name: "User", avatar: "" });
 });
 
 test("gm scene start clears pending start request indication", () => {
@@ -1100,7 +1097,7 @@ test("gm scene start clears pending start request indication", () => {
   game.user.id = "gm";
   game.user.isGM = true;
   game.users.activeGM.id = "gm";
-  game.users.get = id => ({id, name: id === "u1" ? "Player One" : "GM", avatar: ""});
+  game.users.get = id => ({ id, name: id === "u1" ? "Player One" : "GM", avatar: "" });
 
   handlers.syncQueueState([], [], null, false);
   handlers.showSceneStartRequestIndication("u1");
@@ -1117,7 +1114,7 @@ test("gm scene start clears pending start request indication", () => {
   game.userId = "u1";
   game.user.id = "u1";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: "User", avatar: ""});
+  game.users.get = id => ({ id, name: "User", avatar: "" });
 });
 
 test("last pending player lowering hand removes start request indication", () => {
@@ -1129,7 +1126,7 @@ test("last pending player lowering hand removes start request indication", () =>
   game.user.id = "gm";
   game.user.isGM = true;
   game.users.activeGM.id = "gm";
-  game.users.get = id => ({id, name: id === "u1" ? "Player One" : "GM", avatar: ""});
+  game.users.get = id => ({ id, name: id === "u1" ? "Player One" : "GM", avatar: "" });
   socketState.getGmQueue().clear();
   socketState.setGmSceneActive(false);
 
@@ -1143,7 +1140,7 @@ test("last pending player lowering hand removes start request indication", () =>
   game.userId = "u1";
   game.user.id = "u1";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: "User", avatar: ""});
+  game.users.get = id => ({ id, name: "User", avatar: "" });
 });
 
 test("gm start turns pending requesters into yellow participants without speaker", () => {
@@ -1152,7 +1149,7 @@ test("gm start turns pending requesters into yellow participants without speaker
   game.user.id = "gm";
   game.user.isGM = true;
   game.users.activeGM.id = "gm";
-  game.users.get = id => ({id, name: id === "u1" ? "Player One" : "GM", avatar: ""});
+  game.users.get = id => ({ id, name: id === "u1" ? "Player One" : "GM", avatar: "" });
   socketState.getGmQueue().clear();
   socketState.getGmUrgentUsers().clear();
   socketState.setGmSpeakerUserId(null);
@@ -1168,7 +1165,7 @@ test("gm start turns pending requesters into yellow participants without speaker
   game.userId = "u1";
   game.user.id = "u1";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: "User", avatar: ""});
+  game.users.get = id => ({ id, name: "User", avatar: "" });
 });
 
 test("gm space starts scene only after a player requested it", () => {
@@ -1229,7 +1226,7 @@ test("players see indication when gm starts an rp scene", () => {
   game.userId = "u1";
   game.user.id = "u1";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: id === "u1" ? "Player One" : "GM", avatar: ""});
+  game.users.get = id => ({ id, name: id === "u1" ? "Player One" : "GM", avatar: "" });
   handlers.syncQueueState([], [], null, false);
 
   handlers.syncQueueState(["u1"], [], null, true);
@@ -1252,18 +1249,18 @@ test("player hand raise during active scene shows yellow camera badge", async ()
   game.user.id = "u1";
   game.user.isGM = false;
   game.users.activeGM.id = "gm";
-  game.users.get = id => ({id, name: id === "u1" ? "Player One" : "GM", avatar: ""});
+  game.users.get = id => ({ id, name: id === "u1" ? "Player One" : "GM", avatar: "" });
   socketState.getGmQueue().clear();
   socketState.getGmUrgentUsers().clear();
   socketState.setGmSpeakerUserId(null);
   socketState.setGmSceneActive(true);
   handlers.syncQueueState([], [], null, true);
 
-  const localUser = {userId: game.userId, id: game.user.id, isGM: game.user.isGM};
+  const localUser = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
   const fakeSocket = {
-    register: () => {},
+    register: () => { },
     executeForAllGMs: (handler, ...args) => {
-      const previous = {userId: game.userId, id: game.user.id, isGM: game.user.isGM};
+      const previous = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
       game.userId = "gm";
       game.user.id = "gm";
       game.user.isGM = true;
@@ -1273,7 +1270,7 @@ test("player hand raise during active scene shows yellow camera badge", async ()
       game.user.isGM = previous.isGM;
     },
     executeForEveryone: (handler, ...args) => {
-      const previous = {userId: game.userId, id: game.user.id, isGM: game.user.isGM};
+      const previous = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
       game.userId = localUser.userId;
       game.user.id = localUser.id;
       game.user.isGM = localUser.isGM;
@@ -1282,12 +1279,12 @@ test("player hand raise during active scene shows yellow camera badge", async ()
       game.user.id = previous.id;
       game.user.isGM = previous.isGM;
     },
-    executeAsUser: () => {}
+    executeAsUser: () => { }
   };
   socketlib.registerModule = () => fakeSocket;
   socketState.initSocket();
 
-  await handHandlers.raise({skipTimeout: true});
+  await handHandlers.raise({ skipTimeout: true });
 
   const badge = cameraView.querySelector(".raise-my-hand-queue-badge");
   assert.ok(badge);
@@ -1301,11 +1298,11 @@ test("scene camera badge renders on camera views outside dock scope", () => {
   settingsState.handSettings.general.notificationModes = new Set([]);
   const document = new FakeDocument();
   globalThis.document = document;
-  const cameraView = document.addCameraView("u1", {outsideDock: true});
+  const cameraView = document.addCameraView("u1", { outsideDock: true });
   game.userId = "u1";
   game.user.id = "u1";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: id === "u1" ? "Player One" : "GM", avatar: ""});
+  game.users.get = id => ({ id, name: id === "u1" ? "Player One" : "GM", avatar: "" });
 
   handlers.syncQueueState(["u1"], [], null, true);
 
@@ -1321,7 +1318,7 @@ test("moving non-speaker indication survives position refresh", () => {
   game.userId = "u1";
   game.user.id = "u1";
   game.user.isGM = false;
-  game.users.get = id => ({id, name: id === "u1" ? "Player One" : "GM", avatar: ""});
+  game.users.get = id => ({ id, name: id === "u1" ? "Player One" : "GM", avatar: "" });
   handlers.syncQueueState([], [], null, false);
   handlers.syncQueueState(["u1"], [], null, true);
 
@@ -1333,9 +1330,9 @@ test("moving non-speaker indication survives position refresh", () => {
     button: 0,
     clientX: 20,
     clientY: 24,
-    preventDefault: () => {}
+    preventDefault: () => { }
   });
-  window.dispatchEvent({type: "pointerup", clientX: 20, clientY: 24});
+  window.dispatchEvent({ type: "pointerup", clientX: 20, clientY: 24 });
 
   handlers.updateCameraQueueBadges();
 
