@@ -31,6 +31,19 @@ export default class QueueState {
   }
 
   /**
+   * Move a user to the back of the queue if present.
+   * @param {string} userId - The user ID to move
+   * @returns {boolean} True if the user was found and moved
+   */
+  moveToBack(userId) {
+    const index = this.#queue.indexOf(userId);
+    if (index === -1) return false;
+    this.#queue.splice(index, 1);
+    this.#queue.push(userId);
+    return true;
+  }
+
+  /**
    * Get the 1-based position of a user in the queue.
    * @param {string} userId - The user ID to look up
    * @returns {number} 1-based position, or 0 if not in queue

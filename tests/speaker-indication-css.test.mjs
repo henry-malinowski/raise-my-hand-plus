@@ -10,19 +10,42 @@ test("speaker indication has no screen border animation", () => {
   assert.doesNotMatch(css, /@keyframes\s+raise-my-hand-speaker-frame/);
 });
 
-test("urgent indication root supports side-by-side positioning", () => {
-  assert.match(css, /#raise-my-hand-speaker-indication,\s*#raise-my-hand-urgent-indication\s*\{/);
-  assert.match(css, /\.raise-my-hand-urgent-indication\s+\.raise-my-hand-speaker-banner\s*\{[^}]*top:\s*28px;/);
-  assert.doesNotMatch(css, /\.raise-my-hand-urgent-indication\s+\.raise-my-hand-speaker-banner\s*\{[^}]*top:\s*104px;/);
-  assert.match(css, /\.raise-my-hand-urgent-indication\s+\.raise-my-hand-speaker-banner\s*\{[^}]*cursor:\s*move;/);
-  assert.match(css, /\.raise-my-hand-urgent-indication\s+\.raise-my-hand-speaker-banner\s*\{[^}]*pointer-events:\s*auto;/);
+test("urgent speakers are shown in the inline talking queue", () => {
+  assert.doesNotMatch(css, /#raise-my-hand-urgent-indication/);
+  assert.doesNotMatch(css, /\.raise-my-hand-urgent-indication/);
+  assert.match(css, /\.raise-my-hand-talking-queue\s*\{/);
+  assert.match(css, /\.raise-my-hand-talking-queue-item\.urgent\s*\{/);
 });
 
-test("speaker and urgent banners use the same reserved height", () => {
+test("speaker banner keeps a stable reserved height", () => {
   const bannerRule = css.match(/\.raise-my-hand-speaker-banner\s*\{(?<body>[^}]+)\}/)?.groups.body ?? "";
 
   assert.match(bannerRule, /box-sizing:\s*border-box;/);
   assert.match(bannerRule, /min-height:\s*68px;/);
+});
+
+test("speaker avatar crops from the top of portrait art", () => {
+  const avatarRule = css.match(/\.raise-my-hand-speaker-avatar\s*\{(?<body>[^}]+)\}/)?.groups.body ?? "";
+
+  assert.match(avatarRule, /top center \/ cover no-repeat;/);
+});
+
+test("talking queue chips center the number and name on one line", () => {
+  const itemRule = css.match(/\.raise-my-hand-talking-queue-item\s*\{(?<body>[^}]+)\}/)?.groups.body ?? "";
+  const positionRule = css.match(/\.raise-my-hand-talking-queue-position\s*\{(?<body>[^}]+)\}/)?.groups.body ?? "";
+  const nameRule = css.match(/\.raise-my-hand-talking-queue-name\s*\{(?<body>[^}]+)\}/)?.groups.body ?? "";
+
+  assert.match(itemRule, /height:\s*36px;/);
+  assert.match(itemRule, /margin:\s*0;/);
+  assert.match(itemRule, /display:\s*inline-grid;/);
+  assert.match(itemRule, /grid-template-columns:\s*18px minmax\(0,\s*auto\);/);
+  assert.match(itemRule, /align-items:\s*center;/);
+  assert.match(itemRule, /justify-items:\s*center;/);
+  assert.match(positionRule, /line-height:\s*1;/);
+  assert.match(nameRule, /display:\s*flex;/);
+  assert.match(nameRule, /align-items:\s*center;/);
+  assert.match(nameRule, /line-height:\s*1;/);
+  assert.doesNotMatch(nameRule, /transform:/);
 });
 
 test("speaker indication palette includes scene started color", () => {

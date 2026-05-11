@@ -41,6 +41,16 @@
     }
   }
 
+  /* Next state: blue hand and border */
+  &.next {
+    border-color: var(--raise-my-hand-blue);
+
+    .fa-hand-paper,
+    .fa-bullhorn {
+      color: var(--raise-my-hand-blue);
+    }
+  }
+
   /* Urgent state: red hand and border */
   &.urgent {
     border-color: var(--raise-my-hand-red);

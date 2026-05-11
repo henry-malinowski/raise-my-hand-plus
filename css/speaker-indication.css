@@ -1,5 +1,4 @@
-#raise-my-hand-speaker-indication,
-#raise-my-hand-urgent-indication {
+#raise-my-hand-speaker-indication {
   --raise-my-hand-speaker-color: var(--raise-my-hand-green);
   --raise-my-hand-speaker-text: #ecfff1;
   --raise-my-hand-speaker-bg: rgba(8, 14, 12, 0.86);
@@ -17,10 +16,11 @@
   transform: translateX(-50%) translateY(-12px);
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   box-sizing: border-box;
   min-height: 68px;
-  max-width: min(640px, 90vw);
+  max-width: min(880px, 94vw);
   padding: 12px 20px;
   border: 1px solid color-mix(in srgb, var(--raise-my-hand-speaker-color) 45%, transparent);
   border-radius: 8px;
@@ -38,14 +38,6 @@
   animation: raise-my-hand-speaker-banner 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.raise-my-hand-urgent-indication .raise-my-hand-speaker-banner {
-  top: 28px;
-  left: calc(50% + 154px);
-  transform: translateY(-12px);
-  cursor: move;
-  pointer-events: auto;
-}
-
 .raise-my-hand-speaker-banner.is-positioned {
   right: auto;
   bottom: auto;
@@ -60,7 +52,7 @@
   border-radius: 50%;
   background:
     color-mix(in srgb, var(--raise-my-hand-speaker-color) 24%, transparent)
-    center / cover no-repeat;
+    top center / cover no-repeat;
   border: 2px solid color-mix(in srgb, var(--raise-my-hand-speaker-color) 70%, transparent);
   box-shadow: 0 0 16px color-mix(in srgb, var(--raise-my-hand-speaker-color) 50%, transparent);
 }
@@ -72,6 +64,62 @@
   line-height: 1.2;
   color: var(--raise-my-hand-speaker-text);
   text-shadow: 0 0 18px color-mix(in srgb, var(--raise-my-hand-speaker-color) 60%, transparent);
+}
+
+.raise-my-hand-talking-queue {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.raise-my-hand-talking-queue-item {
+  display: inline-grid;
+  grid-template-columns: 18px minmax(0, auto);
+  align-items: center;
+  justify-items: center;
+  gap: 6px;
+  height: 36px;
+  max-width: 180px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--raise-my-hand-yellow) 55%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--raise-my-hand-yellow) 14%, transparent);
+  color: var(--raise-my-hand-speaker-text);
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.raise-my-hand-talking-queue-item.urgent {
+  border-color: color-mix(in srgb, var(--raise-my-hand-red) 65%, transparent);
+  background: color-mix(in srgb, var(--raise-my-hand-red) 18%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--raise-my-hand-red) 22%, transparent);
+}
+
+.raise-my-hand-talking-queue-position {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.raise-my-hand-talking-queue-name {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1;
 }
 
 @keyframes raise-my-hand-speaker-banner {

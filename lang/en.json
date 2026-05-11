@@ -24,7 +24,8 @@
         "toggle": {
           "true": "Lower Hand",
           "false": "Raise Hand"
-        }
+        },
+        "finish": "Finish Speak"
       },
       "show-xcard": {
         "name": "Show X-Card",
@@ -41,8 +42,12 @@
         "end": "End RP Scene"
       },
       "snatch-spotlight": {
-        "name": "Snatch Spotlight",
-        "hint": "When no one is speaking, take the spotlight. When you are speaking, release it and keep your hand raised."
+        "name": "Talking Queue",
+        "hint": "When you are speaking, finish your turn and pass spotlight to the next speaker. When spotlight is available, take it if you are next."
+      },
+      "delay-spotlight": {
+        "name": "Delay Talking Turn",
+        "hint": "When you are speaking, keep your hand raised but pass spotlight to the next speaker."
       }
     },
     "settings": {

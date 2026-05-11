@@ -1,8 +1,5 @@
-/**
- * The module ID used for FoundryVTT module registration and settings.
- * @type {string}
- */
-export const MODULE_ID = 'raise-my-hand';
+import { MODULE_ID } from "./module-id.mjs";
+export { MODULE_ID };
 
 import { default as HandConfig } from "./applications/settings/hand-config.mjs";
 import { default as XCardConfig } from "./applications/settings/xcard-config.mjs";
@@ -247,6 +244,18 @@ function registerKeybindings() {
     onDown: (context) => {
       if (context.event?.repeat) return false;
       const handled = handHandlers.snatchSpotlight();
+      return handled;
+    },
+    reservedModifiers: []
+  });
+
+  game.keybindings.register(MODULE_ID, "delay-spotlight", {
+    name: 'raise-my-hand.controls.delay-spotlight.name',
+    hint: 'raise-my-hand.controls.delay-spotlight.hint',
+    editable: [{ key: "Space", modifiers: ["Shift"]}],
+    onDown: (context) => {
+      if (context.event?.repeat) return false;
+      const handled = handHandlers.delaySpotlight();
       return handled;
     },
     reservedModifiers: []

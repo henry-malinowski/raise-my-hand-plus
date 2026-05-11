@@ -42,7 +42,7 @@ export default class XCardConfig extends HandlebarsApplicationMixin(ApplicationV
    */
   static PARTS = {
     form: {
-      template: "modules/raise-my-hand/templates/settings/menus/xcard-config.hbs",
+      template: `modules/${MODULE_ID}/templates/settings/menus/xcard-config.hbs`,
       scrollable: [""]
     },
     footer: {

@@ -2,7 +2,7 @@ import { MODULE_ID } from "../raise-my-hand.mjs";
 import { checkAndUpdateTimeout } from "./helpers.mjs";
 import { conditionalExecute, getActiveGmUserIds, getGmQueue, getSocket } from "../socket/socket.mjs";
 import { playSoundWithReplacement } from "./helpers.mjs";
-import { appendPlayerListIcon, appendCameraIndicator, createUiNotification, createHandPopout, removePlayerListIcon, closeHandPopout, lowerHandForUser, trackHandRaised, requestQueueJoin, requestQueueRemove, requestUrgent, requestSpotlightToggle, requestSceneStart, requestSceneEnd, isHandRaised, isSceneActive } from "../socket/handlers.mjs";
+import { appendPlayerListIcon, appendCameraIndicator, createUiNotification, createHandPopout, removePlayerListIcon, closeHandPopout, lowerHandForUser, trackHandRaised, requestQueueJoin, requestQueueRemove, requestUrgent, requestSpotlightToggle, requestSpotlightDelay, requestSceneStart, requestSceneEnd, isHandRaised, isSceneActive, getSpeakerUserId } from "../socket/handlers.mjs";
 
 const { renderTemplate } = foundry.applications.handlebars;
 
@@ -12,6 +12,15 @@ const { renderTemplate } = foundry.applications.handlebars;
  * @returns {void}
  */
 export function toggle(active) {
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  const isSceneMode = game.settings.get(MODULE_ID, "enableQueue") && handSettings.general.isToggle && isSceneActive();
+  if (!active && isSceneMode && getSpeakerUserId() === game.userId) {
+    getSocket()?.executeForAllGMs(requestSpotlightToggle, game.userId);
+    ui.controls.controls["tokens"].tools["raise-hand"].title = "raise-my-hand.controls.raise-hand.finish";
+    ui.controls.render();
+    return;
+  }
+
   active ? raise({ skipTimeout: true }) : lower();
   ui.controls.controls["tokens"].tools["raise-hand"].title = `raise-my-hand.controls.raise-hand.toggle.${active}`;
   ui.controls.render();
@@ -74,6 +83,7 @@ export async function raise({ skipTimeout = false } = {}) {
     // Build template data object
     const templateData = {
       playerAvatar: player.avatar,
+      moduleId: MODULE_ID,
       ...handSettings.chat
     };
 
@@ -191,6 +201,7 @@ export function urgentSpeak() {
         ui.controls.render();
       }
       raise({skipTimeout: true});
+      socket?.executeForAllGMs(requestUrgent, id);
     }
     return;
   }
@@ -242,6 +253,24 @@ export function snatchSpotlight() {
 
   const socket = getSocket();
   socket?.executeForAllGMs(requestSpotlightToggle, game.userId);
+  return true;
+}
+
+/**
+ * Delay the current user's spotlight turn.
+ * The user stays in the scene queue, but moves behind the current waiters.
+ * @returns {boolean} Whether the action handled the keypress.
+ */
+export function delaySpotlight() {
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  if (!handSettings.general.isToggle) return false;
+  if (!game.settings.get(MODULE_ID, "enableQueue")) return false;
+  if (!isSceneActive()) return false;
+  if (game.user.isGM) return false;
+  if (getSpeakerUserId() !== game.userId) return false;
+
+  const socket = getSocket();
+  socket?.executeForAllGMs(requestSpotlightDelay, game.userId);
   return true;
 }
 

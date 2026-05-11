@@ -78,22 +78,14 @@ let localSceneActive = false;
  */
 const cameraIndicators = new Set();
 const SPEAKER_INDICATION_ID = "raise-my-hand-speaker-indication";
-const URGENT_INDICATION_ID = "raise-my-hand-urgent-indication";
 
 /**
  * Track the current large overlay type so badge refreshes do not remove
  * non-speaker messages such as scene-start requests.
- * @type {{type: "speaker"|"request"|"scene"|"urgent", userId: string, text: string}|null}
+ * @type {{type: "speaker"|"request"|"scene", userId: string, text: string}|null}
  * @private
  */
 let activeSceneIndication = null;
-
-/**
- * Track the separate urgent overlay when it must be shown alongside a speaker.
- * @type {{type: "urgent", userId: string, text: string}|null}
- * @private
- */
-let activeUrgentIndication = null;
 
 /**
  * Check if a user has their hand raised based on enabled toggle notification modes.
@@ -165,6 +157,16 @@ function getUserDisplayName(user) {
 }
 
 /**
+ * Get the first visible word of a display name for compact speaker UI.
+ * @param {User} user - Foundry user document.
+ * @returns {string}
+ * @private
+ */
+function getShortUserDisplayName(user) {
+  return getUserDisplayName(user).trim().split(/\s+/)[0] ?? "";
+}
+
+/**
  * Get the banner accent color for an indication type.
  * @param {"speaker"|"request"|"scene"|"urgent"} type - Indication type.
  * @returns {string}
@@ -181,17 +183,72 @@ function getSceneIndicationColor(type) {
 }
 
 /**
- * Pick the next participant who should receive the spotlight.
- * Urgent hands take priority over yellow hands; the releasing speaker is skipped.
- * @param {string|null} previousSpeakerUserId - The speaker who just released spotlight.
+ * Pick the participant who may accept the available spotlight.
+ * Urgent hands take priority over yellow hands while preserving queue order.
  * @returns {string|null}
  * @private
  */
-function getNextSpotlightUserId(previousSpeakerUserId = null) {
+function getNextQueueUserId(queue, urgentUserIds) {
+  const candidates = queue.getAll();
+  return candidates.find(id => urgentUserIds.has(id)) ?? candidates[0] ?? null;
+}
+
+/**
+ * Pick the GM-authoritative participant who may accept the available spotlight.
+ * @returns {string|null}
+ * @private
+ */
+function getNextSpotlightUserId() {
+  return getNextQueueUserId(getGmQueue(), getGmUrgentUsers());
+}
+
+/**
+ * Set the current speaker to the next eligible participant.
+ * @param {string|null} [excludeUserId=null] - User ID to avoid selecting.
+ * @returns {string|null} The new speaker user ID.
+ * @private
+ */
+function advanceSpotlight(excludeUserId = null) {
   const gmQueue = getGmQueue();
   const gmUrgent = getGmUrgentUsers();
-  const candidates = gmQueue.getAll().filter(id => id !== previousSpeakerUserId);
-  return candidates.find(id => gmUrgent.has(id)) ?? candidates[0] ?? null;
+  const candidates = gmQueue.getAll().filter(id => id !== excludeUserId);
+  const nextSpeaker = candidates.find(id => gmUrgent.has(id)) ?? candidates[0] ?? null;
+  if (nextSpeaker) gmUrgent.delete(nextSpeaker);
+  setGmSpeakerUserId(nextSpeaker);
+  return nextSpeaker;
+}
+
+/**
+ * Pick the locally visible participant who may accept the available spotlight.
+ * @returns {string|null}
+ * @private
+ */
+function getNextLocalSpotlightUserId() {
+  if (!localSceneActive || localSpeakerUserId) return null;
+  return getNextQueueUserId(localQueue, urgentUsers);
+}
+
+/**
+ * Check if a user is the locally visible up-next participant.
+ * @param {string} userId - User ID to check.
+ * @returns {boolean}
+ * @private
+ */
+function isNextLocalSpotlightUser(userId) {
+  return getNextLocalSpotlightUserId() === userId;
+}
+
+/**
+ * Get the local queue position text for a non-speaking participant.
+ * @param {string} userId - User ID to check.
+ * @param {boolean} isSpeaking - Whether the user is currently speaking.
+ * @returns {string}
+ * @private
+ */
+function getQueuePositionText(userId, isSpeaking) {
+  if (isSpeaking) return "";
+  const position = localQueue.getPosition(userId);
+  return position > 0 ? String(position) : "";
 }
 
 /**
@@ -208,8 +265,7 @@ function removeSpeakerIndication() {
  * @returns {void}
  */
 function removeUrgentIndication() {
-  activeUrgentIndication = null;
-  document.querySelector(`#${URGENT_INDICATION_ID}`)?.remove();
+  document.querySelector("#raise-my-hand-urgent-indication")?.remove();
 }
 
 /**
@@ -266,65 +322,6 @@ function applySpeakerIndicationPosition(banner, position) {
   banner.style.top = `${clamped.y}px`;
 }
 
-const SPEAKER_INDICATION_GAP = 12;
-
-/**
- * Get a positioned rectangle from a banner.
- * @param {HTMLElement} banner - The banner element.
- * @returns {{left: number, top: number, width: number, height: number, right: number}}
- * @private
- */
-function getBannerRect(banner) {
-  const rect = banner?.getBoundingClientRect?.() ?? {};
-  const styleLeft = Number.parseFloat(banner?.style?.left);
-  const styleTop = Number.parseFloat(banner?.style?.top);
-  const useStylePosition = banner?.classList?.contains("is-positioned")
-    && Number.isFinite(styleLeft)
-    && Number.isFinite(styleTop);
-  const left = useStylePosition ? styleLeft : (Number.isFinite(rect.left) ? rect.left : styleLeft || 0);
-  const top = useStylePosition ? styleTop : (Number.isFinite(rect.top) ? rect.top : styleTop || 0);
-  const width = rect.width || banner?.offsetWidth || 260;
-  const height = rect.height || banner?.offsetHeight || 68;
-  const right = useStylePosition ? left + width : (Number.isFinite(rect.right) ? rect.right : left + width);
-  return { left, top, width, height, right };
-}
-
-/**
- * Get the default position for a side-by-side speaker/urgent pair.
- * @param {HTMLElement} speakerBanner - The speaker banner element.
- * @param {HTMLElement} urgentBanner - The urgent banner element.
- * @returns {{x: number, y: number}}
- * @private
- */
-function getDefaultSpeakerPairPosition(speakerBanner, urgentBanner) {
-  const speakerWidth = speakerBanner?.offsetWidth || 260;
-  const urgentWidth = urgentBanner?.offsetWidth || 260;
-  const viewportWidth = globalThis.window?.innerWidth || 0;
-  const pairWidth = speakerWidth + SPEAKER_INDICATION_GAP + urgentWidth;
-  const x = Math.max(0, Math.round((viewportWidth - pairWidth) / 2));
-  return clampSpeakerIndicationPosition(x, 28, speakerBanner);
-}
-
-/**
- * Get the speaker banner anchor position, preferring saved/inline position.
- * @param {HTMLElement} speakerBanner - The speaker banner element.
- * @param {HTMLElement} urgentBanner - The urgent banner element.
- * @returns {{x: number, y: number}}
- * @private
- */
-function getSpeakerAnchorPosition(speakerBanner, urgentBanner) {
-  const styleLeft = Number.parseFloat(speakerBanner?.style?.left);
-  const styleTop = Number.parseFloat(speakerBanner?.style?.top);
-  if (Number.isFinite(styleLeft) && Number.isFinite(styleTop)) {
-    return clampSpeakerIndicationPosition(styleLeft, styleTop, speakerBanner);
-  }
-
-  if (urgentBanner) return getDefaultSpeakerPairPosition(speakerBanner, urgentBanner);
-
-  const rect = getBannerRect(speakerBanner);
-  return clampSpeakerIndicationPosition(rect.left, rect.top, speakerBanner);
-}
-
 /**
  * Get the current speaker indication banner.
  * @returns {HTMLElement|null}
@@ -335,63 +332,12 @@ function getSpeakerBanner() {
 }
 
 /**
- * Get the current urgent indication banner.
- * @returns {HTMLElement|null}
- * @private
- */
-function getUrgentBanner() {
-  return document.querySelector(`#${URGENT_INDICATION_ID}`)?.querySelector(".raise-my-hand-speaker-banner") ?? null;
-}
-
-/**
- * Position the urgent banner next to the current speaker banner.
- * @returns {void}
- * @private
- */
-function alignUrgentIndicationToSpeaker() {
-  const speakerBanner = getSpeakerBanner();
-  const urgentBanner = getUrgentBanner();
-  if (!speakerBanner || !urgentBanner) return;
-
-  const speakerPosition = getSpeakerAnchorPosition(speakerBanner, urgentBanner);
-  applySpeakerIndicationPosition(speakerBanner, speakerPosition);
-  const speakerRect = getBannerRect(speakerBanner);
-  const urgentWidth = urgentBanner?.offsetWidth || 260;
-  const viewportWidth = globalThis.window?.innerWidth || 0;
-  const rightSideX = speakerRect.right + SPEAKER_INDICATION_GAP;
-  const leftSideX = speakerRect.left - urgentWidth - SPEAKER_INDICATION_GAP;
-  const x = rightSideX + urgentWidth <= viewportWidth ? rightSideX : leftSideX;
-  applySpeakerIndicationPosition(urgentBanner, { x, y: speakerRect.top });
-}
-
-/**
- * Convert an urgent-banner drag target into the saved speaker-banner position.
- * @param {{x: number, y: number}} urgentPosition - New urgent banner position.
- * @param {HTMLElement} urgentBanner - The urgent banner element.
- * @returns {{x: number, y: number}|null}
- * @private
- */
-function getSpeakerPositionFromUrgentDrag(urgentPosition, urgentBanner) {
-  const speakerBanner = getSpeakerBanner();
-  if (!speakerBanner) return null;
-
-  const speakerRect = getBannerRect(speakerBanner);
-  const urgentRect = getBannerRect(urgentBanner);
-  const urgentIsLeft = urgentRect.left < speakerRect.left;
-  const speakerX = urgentIsLeft
-    ? urgentPosition.x + urgentRect.width + SPEAKER_INDICATION_GAP
-    : urgentPosition.x - speakerRect.width - SPEAKER_INDICATION_GAP;
-  return clampSpeakerIndicationPosition(speakerX, urgentPosition.y, speakerBanner);
-}
-
-/**
- * Make an indication banner draggable and save the pair's speaker position.
+ * Make an indication banner draggable and save the speaker position.
  * @param {HTMLElement} banner - The speaker banner element.
- * @param {"speaker"|"urgent"} [type="speaker"] - Which indication this banner belongs to.
  * @returns {void}
  * @private
  */
-function bindSpeakerIndicationDrag(banner, type = "speaker") {
+function bindSpeakerIndicationDrag(banner) {
   if (!banner || banner.dataset.dragBound === "true") return;
   banner.dataset.dragBound = "true";
 
@@ -403,30 +349,20 @@ function bindSpeakerIndicationDrag(banner, type = "speaker") {
     const rect = banner.getBoundingClientRect?.() ?? { left: 0, top: 0 };
     const offsetX = event.clientX - rect.left;
     const offsetY = event.clientY - rect.top;
-    let current = type === "urgent"
-      ? getSpeakerPositionFromUrgentDrag(clampSpeakerIndicationPosition(rect.left, rect.top, banner), banner)
-      : clampSpeakerIndicationPosition(rect.left, rect.top, banner);
+    let current = clampSpeakerIndicationPosition(rect.left, rect.top, banner);
 
     const move = moveEvent => {
-      const draggedPosition = clampSpeakerIndicationPosition(moveEvent.clientX - offsetX, moveEvent.clientY - offsetY, banner);
-      current = type === "urgent"
-        ? getSpeakerPositionFromUrgentDrag(draggedPosition, banner)
-        : draggedPosition;
+      current = clampSpeakerIndicationPosition(moveEvent.clientX - offsetX, moveEvent.clientY - offsetY, banner);
       if (current) applySpeakerIndicationPosition(getSpeakerBanner() ?? banner, current);
-      alignUrgentIndicationToSpeaker();
     };
 
     const up = upEvent => {
       upEvent.stopPropagation?.();
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
-      const draggedPosition = clampSpeakerIndicationPosition(upEvent.clientX - offsetX, upEvent.clientY - offsetY, banner);
-      current = type === "urgent"
-        ? getSpeakerPositionFromUrgentDrag(draggedPosition, banner)
-        : draggedPosition;
+      current = clampSpeakerIndicationPosition(upEvent.clientX - offsetX, upEvent.clientY - offsetY, banner);
       if (!current) return;
       applySpeakerIndicationPosition(getSpeakerBanner() ?? banner, current);
-      alignUrgentIndicationToSpeaker();
       game.settings.set(MODULE_ID, "speakerIndicationPosition", current);
     };
 
@@ -436,24 +372,92 @@ function bindSpeakerIndicationDrag(banner, type = "speaker") {
 }
 
 /**
+ * Build queue items for the top speaking banner, urgent first and then normal queue order.
+ * @returns {{id: string, name: string, urgent: boolean, position: number}[]}
+ * @private
+ */
+function getTalkingQueueItems() {
+  const queuedUserIds = localQueue.getAll().filter(userId => userId !== localSpeakerUserId);
+  const sortedUserIds = [
+    ...queuedUserIds.filter(userId => urgentUsers.has(userId)),
+    ...queuedUserIds.filter(userId => !urgentUsers.has(userId))
+  ];
+
+  return sortedUserIds.map((userId, index) => {
+    const user = game.users.get(userId);
+    return {
+      id: userId,
+      name: getShortUserDisplayName(user) || userId,
+      urgent: urgentUsers.has(userId),
+      position: index + 1
+    };
+  });
+}
+
+/**
+ * Render the inline talking queue for the top speaking banner.
+ * @returns {string} Queue HTML, or an empty string.
+ * @private
+ */
+function renderTalkingQueueHtml() {
+  const items = getTalkingQueueItems();
+  if (items.length === 0) return "";
+
+  const itemHtml = items.map(item => `
+        <li class="raise-my-hand-talking-queue-item ${item.urgent ? "urgent" : "normal"}">
+          <span class="raise-my-hand-talking-queue-position">${item.position}</span>
+          <span class="raise-my-hand-talking-queue-name">${escapeHtml(item.name)}</span>
+        </li>
+      `).join("");
+
+  return `
+      <ol class="raise-my-hand-talking-queue" aria-label="Talking queue">
+        ${itemHtml}
+      </ol>
+    `;
+}
+
+/**
+ * Get the local raise-hand control if Foundry's controls UI is ready.
+ * Socket updates can arrive before the controls application exists.
+ * @returns {object|undefined} The raise-hand tool, if available.
+ * @private
+ */
+function getRaiseHandControl() {
+  return ui.controls?.controls?.["tokens"]?.tools?.["raise-hand"];
+}
+
+/**
+ * Render Foundry controls if the controls UI is ready.
+ * @param {object} [options] - Render options forwarded to Foundry.
+ * @returns {void}
+ * @private
+ */
+function renderControls(options) {
+  ui.controls?.render?.(options);
+}
+
+/**
  * Reflect synced scene membership on the local Raise Hand toggle.
  * @returns {void}
  * @private
  */
 function syncLocalRaiseHandControl() {
-  const tool = ui.controls.controls["tokens"]?.tools["raise-hand"];
+  const tool = getRaiseHandControl();
   if (!tool) return;
 
   const active = localSceneActive && localQueue.getPosition(game.userId) > 0;
   tool.active = active;
-  tool.title = `raise-my-hand.controls.raise-hand.toggle.${active}`;
+  tool.title = localSpeakerUserId === game.userId
+    ? "raise-my-hand.controls.raise-hand.finish"
+    : `raise-my-hand.controls.raise-hand.toggle.${active}`;
 }
 
 /**
  * Show the reusable top-screen indication banner.
  * @param {string} userId - The user ID associated with the indication.
  * @param {string} text - Localized text to show.
- * @param {"speaker"|"request"|"scene"|"urgent"} [type="speaker"] - Indication type.
+ * @param {"speaker"|"request"|"scene"} [type="speaker"] - Indication type.
  * @param {boolean} [shouldShowAvatar=true] - Whether speaker indications may show the user's avatar.
  * @returns {void}
  * @private
@@ -468,6 +472,7 @@ function showSceneIndication(userId, text, type = "speaker", shouldShowAvatar = 
   if (!user || !document.body) return;
   activeSceneIndication = { type, userId, text };
   const showAvatar = type === "speaker" && shouldShowAvatar;
+  const queueHtml = type === "speaker" || type === "request" ? renderTalkingQueueHtml() : "";
 
   let root = document.querySelector("#raise-my-hand-speaker-indication");
   if (!root) {
@@ -483,6 +488,7 @@ function showSceneIndication(userId, text, type = "speaker", shouldShowAvatar = 
     <div class="raise-my-hand-speaker-banner" role="status" aria-live="polite">
       ${showAvatar ? '<div class="raise-my-hand-speaker-avatar"></div>' : ""}
       <div class="raise-my-hand-speaker-text">${escapeHtml(text)}</div>
+      ${queueHtml}
     </div>
   `;
 
@@ -493,44 +499,6 @@ function showSceneIndication(userId, text, type = "speaker", shouldShowAvatar = 
   if (showAvatar && user.avatar) {
     root.querySelector(".raise-my-hand-speaker-avatar").style.backgroundImage = `url("${user.avatar.replace(/["\\]/g, "\\$&")}")`;
   }
-  alignUrgentIndicationToSpeaker();
-}
-
-/**
- * Show the urgent warning in a separate overlay while another indication is active.
- * @param {string} userId - The urgent user ID.
- * @param {string} text - Localized text to show.
- * @returns {void}
- * @private
- */
-function showUrgentIndication(userId, text) {
-  if (!game.settings.get(MODULE_ID, "speakerIndication") || !userId) {
-    removeUrgentIndication();
-    return;
-  }
-
-  const user = game.users.get(userId);
-  if (!user || !document.body) return;
-  activeUrgentIndication = { type: "urgent", userId, text };
-
-  let root = document.querySelector(`#${URGENT_INDICATION_ID}`);
-  if (!root) {
-    root = Object.assign(document.createElement("div"), {
-      id: URGENT_INDICATION_ID,
-      className: "raise-my-hand-speaker-indication raise-my-hand-urgent-indication"
-    });
-    document.body.appendChild(root);
-  }
-
-  root.style.setProperty("--raise-my-hand-speaker-color", "var(--raise-my-hand-red)");
-  root.innerHTML = `
-    <div class="raise-my-hand-speaker-banner" role="status" aria-live="polite">
-      <div class="raise-my-hand-speaker-text">${escapeHtml(text)}</div>
-    </div>
-  `;
-
-  bindSpeakerIndicationDrag(root.querySelector(".raise-my-hand-speaker-banner"), "urgent");
-  alignUrgentIndicationToSpeaker();
 }
 
 /**
@@ -553,7 +521,7 @@ function updateSpeakerIndication(speakerUserId) {
   const user = game.users.get(speakerUserId);
   if (!user) return;
 
-  const name = getUserDisplayName(user);
+  const name = getShortUserDisplayName(user);
   const messageKey = speakerUserId === game.userId
     ? "raise-my-hand.SPEAKER_INDICATION_SELF"
     : "raise-my-hand.SPEAKER_INDICATION";
@@ -610,21 +578,7 @@ function showSceneStartedIndication() {
  * @private
  */
 function updateUrgentWaitingIndication() {
-  if (urgentUsers.size === 0) {
-    if (activeSceneIndication?.type === "urgent") removeSpeakerIndication();
-    removeUrgentIndication();
-    return;
-  }
-
-  const userId = urgentUsers.values().next().value;
-  const text = game.i18n.format?.("raise-my-hand.URGENT_SPEAKER_WAITING", {}) ?? "Urgent speaker waiting";
-  if (localSpeakerUserId) {
-    showUrgentIndication(userId, text);
-    return;
-  }
-
   removeUrgentIndication();
-  showSceneIndication(userId, text, "urgent");
 }
 
 /**
@@ -636,6 +590,7 @@ function updateUrgentWaitingIndication() {
  * @param {string} [state.positionText=""] - Queue position text, if any.
  * @param {boolean} [state.isSpeaking=false] - Whether this user is first in queue.
  * @param {boolean} [state.isUrgent=false] - Whether this user is urgent.
+ * @param {boolean} [state.isNext=false] - Whether this user may accept the spotlight.
  * @param {boolean} [state.isCameraIndicator=false] - Whether this is a non-queue camera hand indicator.
  * @returns {HTMLElement} The badge element.
  */
@@ -644,6 +599,7 @@ function renderCameraBadge(cameraView, {
   positionText = "",
   isSpeaking = false,
   isUrgent = false,
+  isNext = false,
   isCameraIndicator = false
 }) {
   let badge = cameraView.querySelector('.raise-my-hand-queue-badge');
@@ -664,6 +620,7 @@ function renderCameraBadge(cameraView, {
 
   badge.classList.toggle('speaking', isSpeaking);
   badge.classList.toggle('urgent', isUrgent);
+  badge.classList.toggle('next', isNext);
   badge.classList.toggle('raise-my-hand-camera-indicator', isCameraIndicator);
 
   return badge;
@@ -740,6 +697,7 @@ export function appendPlayerListIcon(id) {
   const useQueue = game.settings.get(MODULE_ID, "enableQueue") && isToggleMode;
   const isSpeaking = useQueue && localSpeakerUserId === id;
   const isUrgent = useQueue && !isSpeaking && urgentUsers.has(id);
+  const isNext = useQueue && !isSpeaking && isNextLocalSpotlightUser(id);
   const iconClass = isSpeaking ? 'fa-bullhorn' : 'fa-hand-paper';
 
   // Create new icon element with fade-in and waving animation
@@ -752,6 +710,10 @@ export function appendPlayerListIcon(id) {
   if (useQueue) {
     icon.classList.toggle('speaking', isSpeaking);
     icon.classList.toggle('urgent', isUrgent);
+    icon.classList.toggle('next', isNext);
+    const positionText = getQueuePositionText(id, isSpeaking);
+    if (positionText) icon.dataset.queuePosition = positionText;
+    else delete icon.dataset.queuePosition;
   }
 
   playerName.appendChild(icon);
@@ -869,13 +831,13 @@ export function clearPlayerListIcons() {
   localSceneActive = false;
   removeSpeakerIndication();
   removeUrgentIndication();
-  const tool = ui.controls.controls["tokens"]?.tools["raise-hand"];
+  const tool = getRaiseHandControl();
   if (tool?.active) {
     tool.active = false;
     tool.title = "raise-my-hand.controls.raise-hand.toggle.false";
-    ui.controls.render();
+    renderControls();
   }
-  if (wasSceneActive) ui.controls.render({ reset: true });
+  if (wasSceneActive) renderControls({ reset: true });
   // Remove all camera queue badges and cinematic badges
   document.querySelectorAll('.raise-my-hand-queue-badge').forEach(badge => badge.remove());
   emitStateChanged();
@@ -941,12 +903,12 @@ export function lowerHandForUser(id) {
   // Only lower if it's the current user's toggle
   if (id !== game.userId) return;
 
-  const tool = ui.controls.controls["tokens"]?.tools["raise-hand"];
+  const tool = getRaiseHandControl();
 
   // Lower the toggle if it's currently active
   if (tool?.active) {
     tool.active = false;
-    ui.controls.render();
+    renderControls();
   }
 }
 
@@ -1084,9 +1046,7 @@ export function requestQueueRemove(userId) {
   if (gmQueue.remove(userId)) {
     getGmUrgentUsers().delete(userId);
     if (getGmSpeakerUserId() === userId) {
-      const nextSpeaker = getNextSpotlightUserId(userId);
-      if (nextSpeaker) getGmUrgentUsers().delete(nextSpeaker);
-      setGmSpeakerUserId(nextSpeaker);
+      advanceSpotlight();
     }
     if (isGmSceneActive()) {
       broadcastQueueState();
@@ -1109,7 +1069,7 @@ export function requestQueueRemove(userId) {
  */
 export function requestUrgent(userId) {
   if (game.users.activeGM?.id !== game.userId) return;
-  if (!isGmSceneActive()) return;
+  if (getGmSpeakerUserId() === userId) return;
   const gmUrgent = getGmUrgentUsers();
   const gmQueue = getGmQueue();
 
@@ -1118,7 +1078,10 @@ export function requestUrgent(userId) {
   } else {
     if (gmQueue.getPosition(userId) === 0) gmQueue.add(userId);
     gmUrgent.add(userId);
-    if (getGmSpeakerUserId() === userId) setGmSpeakerUserId(null);
+    if (!isGmSceneActive()) {
+      const socket = getSocket();
+      socket?.executeForEveryone(showSceneStartRequestIndication, userId);
+    }
   }
   broadcastQueueState();
 }
@@ -1140,19 +1103,36 @@ export function requestSpotlightToggle(userId) {
   const currentSpeaker = getGmSpeakerUserId();
   if (currentSpeaker === userId) {
     getGmUrgentUsers().delete(userId);
-    const nextSpeaker = getNextSpotlightUserId(userId);
-    if (nextSpeaker) getGmUrgentUsers().delete(nextSpeaker);
-    setGmSpeakerUserId(nextSpeaker);
+    gmQueue.remove(userId);
+    advanceSpotlight();
     broadcastQueueState();
     return;
   }
 
   if (currentSpeaker) return;
-  const gmUrgent = getGmUrgentUsers();
-  if (gmUrgent.size > 0 && !gmUrgent.has(userId)) return;
+  if (getNextSpotlightUserId() !== userId) return;
 
+  const gmUrgent = getGmUrgentUsers();
   gmUrgent.delete(userId);
   setGmSpeakerUserId(userId);
+  broadcastQueueState();
+}
+
+/**
+ * Delay the current speaker's turn and pass spotlight to the next participant.
+ * The speaker remains in the queue, but moves behind the current waiters.
+ * @param {string} userId - The user ID requesting to delay
+ * @returns {void}
+ */
+export function requestSpotlightDelay(userId) {
+  if (game.users.activeGM?.id !== game.userId) return;
+  if (!isGmSceneActive()) return;
+  if (getGmSpeakerUserId() !== userId) return;
+
+  const gmQueue = getGmQueue();
+  if (!gmQueue.moveToBack(userId)) return;
+  getGmUrgentUsers().delete(userId);
+  advanceSpotlight(userId);
   broadcastQueueState();
 }
 
@@ -1167,6 +1147,11 @@ export function requestSceneStart(starterUserId = null) {
   setGmSceneActive(true);
   if (starterUserId && !game.users.get(starterUserId)?.isGM) {
     getGmQueue().add(starterUserId);
+  }
+  const firstRequester = getNextSpotlightUserId();
+  if (firstRequester) {
+    getGmUrgentUsers().delete(firstRequester);
+    setGmSpeakerUserId(firstRequester);
   }
   broadcastQueueState();
 }
@@ -1210,34 +1195,43 @@ export function syncQueueState(orderedUserIds, urgentUserIds = [], speakerUserId
 
   if (!localSceneActive && localQueue.length === 0) {
     clearPlayerListIcons();
-    if (wasSceneActive !== localSceneActive) ui.controls.render({ reset: true });
+    if (wasSceneActive !== localSceneActive) renderControls({ reset: true });
     return;
   }
 
   if (!localSceneActive) {
     updateCameraQueueBadges();
+    if (activeSceneIndication?.type === "request") {
+      showSceneStartRequestIndication(activeSceneIndication.userId);
+    }
     emitStateChanged();
     return;
   }
 
   syncLocalRaiseHandControl();
   if (wasSceneActive !== localSceneActive) {
-    ui.controls.render({ reset: true });
+    renderControls({ reset: true });
     syncLocalRaiseHandControl();
   }
+
+  reapplyQueueIndicators();
 
   // Update speaker and urgent state on all existing player list icons
   document.querySelectorAll('.raise-my-hand-indicator').forEach(icon => {
     const userId = icon.dataset.userId;
     const isSpeaking = userId === localSpeakerUserId;
     const isUrgent = !isSpeaking && urgentUsers.has(userId);
+    const isNext = !isSpeaking && isNextLocalSpotlightUser(userId);
+    const positionText = getQueuePositionText(userId, isSpeaking);
 
     // Swap icon between megaphone (speaking) and hand (scene participant)
     icon.classList.toggle('fa-bullhorn', isSpeaking);
     icon.classList.toggle('fa-hand-paper', !isSpeaking);
     icon.classList.toggle('speaking', isSpeaking);
     icon.classList.toggle('urgent', isUrgent);
-    delete icon.dataset.queuePosition;
+    icon.classList.toggle('next', isNext);
+    if (positionText) icon.dataset.queuePosition = positionText;
+    else delete icon.dataset.queuePosition;
   });
 
   // Update scene badges on camera views and cinematic
@@ -1261,9 +1255,9 @@ export function syncQueueState(orderedUserIds, urgentUserIds = [], speakerUserId
 export function reapplyQueueIndicators() {
   const handSettings = game.settings.get(MODULE_ID, "handSettings");
   if (!handSettings.general.isToggle) return;
-  if (!handSettings.general.notificationModes.has("playerList")) return;
 
   const useQueue = game.settings.get(MODULE_ID, "enableQueue") && localSceneActive;
+  if (!useQueue && !handSettings.general.notificationModes.has("playerList")) return;
   const users = useQueue ? localQueue.getAll() : [...raisedHands];
 
   for (const userId of users) {
@@ -1274,6 +1268,8 @@ export function reapplyQueueIndicators() {
     const position = useQueue ? localQueue.getPosition(userId) : 0;
     const isSpeaking = useQueue && userId === localSpeakerUserId;
     const isUrgent = useQueue && !isSpeaking && urgentUsers.has(userId);
+    const isNext = useQueue && !isSpeaking && isNextLocalSpotlightUser(userId);
+    const positionText = useQueue ? getQueuePositionText(userId, isSpeaking) : "";
     const iconClass = isSpeaking ? 'fa-bullhorn' : 'fa-hand-paper';
 
     const icon = Object.assign(document.createElement('span'), {
@@ -1287,6 +1283,12 @@ export function reapplyQueueIndicators() {
       }
       if (isUrgent) {
         icon.classList.add('urgent');
+      }
+      if (isNext) {
+        icon.classList.add('next');
+      }
+      if (positionText) {
+        icon.dataset.queuePosition = positionText;
       }
     }
 
@@ -1315,6 +1317,7 @@ export function updateCameraQueueBadges() {
     const isParticipant = useQueue && localQueue.getPosition(userId) > 0;
     const isSpeaking = useQueue && userId === localSpeakerUserId;
     const isUrgent = useQueue && !isSpeaking && urgentUsers.has(userId);
+    const isNext = useQueue && !isSpeaking && isNextLocalSpotlightUser(userId);
     const showCameraIndicator = useCameraIndicators && cameraIndicators.has(userId);
     const showBadge = useQueue ? (isParticipant || isUrgent || isSpeaking) : showCameraIndicator;
 
@@ -1323,9 +1326,10 @@ export function updateCameraQueueBadges() {
 
       badge = renderCameraBadge(cameraView, {
         iconClass,
-        positionText: '',
+        positionText: useQueue ? getQueuePositionText(userId, isSpeaking) : '',
         isSpeaking,
         isUrgent,
+        isNext,
         isCameraIndicator: !useQueue
       });
     } else if (badge) {

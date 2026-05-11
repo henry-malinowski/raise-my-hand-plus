@@ -118,6 +118,7 @@ class FakeElement {
   }
 
   set innerHTML(value) {
+    this._innerHTML = value;
     this.children = [];
     if (value.includes("<i")) {
       const icon = new FakeElement("i");
@@ -144,6 +145,17 @@ class FakeElement {
       text.className = "raise-my-hand-speaker-text";
       text.textContent = value.match(/<div class="raise-my-hand-speaker-text">([^<]*)<\/div>/)?.[1] ?? "";
       banner.appendChild(text);
+      if (value.includes("raise-my-hand-talking-queue")) {
+        const queue = new FakeElement("ol");
+        queue.className = "raise-my-hand-talking-queue";
+        for (const match of value.matchAll(/<li class="([^"]*)"[^>]*>([\s\S]*?)<\/li>/g)) {
+          const item = new FakeElement("li");
+          item.className = match[1];
+          item.textContent = match[2].replace(/<[^>]+>/g, "").replace(/\s+/g, "");
+          queue.appendChild(item);
+        }
+        banner.appendChild(queue);
+      }
       this.appendChild(banner);
       return;
     }
@@ -158,6 +170,10 @@ class FakeElement {
       position.className = "queue-position";
       this.appendChild(position);
     }
+  }
+
+  get innerHTML() {
+    return this._innerHTML ?? "";
   }
 
   appendChild(child) {
@@ -222,6 +238,8 @@ function matchesSelector(element, selector) {
   if (selector === ".queue-position") return element.classList.contains("queue-position");
   if (selector === ".raise-my-hand-queue-badge") return element.classList.contains("raise-my-hand-queue-badge");
   if (selector === ".raise-my-hand-speaker-banner") return element.classList.contains("raise-my-hand-speaker-banner");
+  if (selector === ".raise-my-hand-talking-queue") return element.classList.contains("raise-my-hand-talking-queue");
+  if (selector === ".raise-my-hand-talking-queue-item") return element.classList.contains("raise-my-hand-talking-queue-item");
   return false;
 }
 
@@ -230,6 +248,7 @@ class FakeDocument {
     this.body = new FakeElement("body");
     this.cameraRoot = new FakeElement("div");
     this.cameraRoot.id = "camera-views";
+    this.playersRoot = new FakeElement("ol");
   }
 
   createElement(tagName) {
@@ -237,6 +256,18 @@ class FakeDocument {
   }
 
   querySelector(selector) {
+    if (selector.startsWith('[data-user-id="')) {
+      const userId = selector.match(/data-user-id="([^"]+)"/)?.[1];
+      const player = this.playersRoot.children.find(child => child.dataset.userId === userId);
+      if (!player) return null;
+      if (selector.includes("> .player-name > .raise-my-hand-indicator")) {
+        return player.querySelector(".raise-my-hand-indicator");
+      }
+      if (selector.includes("> .player-name")) {
+        return player.querySelector(".player-name");
+      }
+      return player;
+    }
     if (selector === "#raise-my-hand-speaker-indication") {
       return this.body.children.find(child => child.id === "raise-my-hand-speaker-indication") ?? null;
     }
@@ -272,6 +303,7 @@ class FakeDocument {
       ...this.body.querySelectorAll(selector)
     ];
     if (selector === ".raise-my-hand-queue-badge") return this.cameraRoot.querySelectorAll(selector);
+    if (selector === ".raise-my-hand-indicator") return this.playersRoot.querySelectorAll(selector);
     if (selector === "#raise-my-hand-speaker-indication") return this.querySelector(selector) ? [this.querySelector(selector)] : [];
     if (selector === "#raise-my-hand-urgent-indication") return this.querySelector(selector) ? [this.querySelector(selector)] : [];
     return [];
@@ -284,6 +316,16 @@ class FakeDocument {
     if (outsideDock) this.body.appendChild(cameraView);
     else this.cameraRoot.appendChild(cameraView);
     return cameraView;
+  }
+
+  addPlayer(userId) {
+    const player = new FakeElement("li");
+    player.dataset.userId = userId;
+    const playerName = new FakeElement("div");
+    playerName.className = "player-name";
+    player.appendChild(playerName);
+    this.playersRoot.appendChild(player);
+    return player;
   }
 }
 
@@ -431,6 +473,8 @@ const handHandlers = await import("../scripts/handlers/hand.mjs");
 const { default: HandSettingsData } = await import("../scripts/data/settings/HandSettingsData.mjs");
 
 test.beforeEach(() => {
+  globalThis.document ??= new FakeDocument();
+  handlers.clearPlayerListIcons();
   settingsState.enableQueue = false;
   settingsState.speakerIndication = true;
   settingsState.speakerIndicationPosition = null;
@@ -528,13 +572,13 @@ test("spotlight request blocks snatch while another player speaks", () => {
 
   handlers.requestSpotlightToggle("u1");
   assert.equal(socketState.getGmSpeakerUserId(), "u2");
-  assert.deepEqual(socketState.getGmQueue().getAll(), ["u1", "u2"]);
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["u2"]);
 
   game.userId = "u1";
   game.user.id = "u1";
 });
 
-test("urgent participant becomes yellow after releasing spotlight", () => {
+test("urgent participant leaves queue after finishing spotlight", () => {
   assert.equal(typeof handlers.requestSpotlightToggle, "function");
 
   game.userId = "gm";
@@ -556,10 +600,43 @@ test("urgent participant becomes yellow after releasing spotlight", () => {
   handlers.requestSpotlightToggle("u1");
   assert.equal(socketState.getGmSpeakerUserId(), null);
   assert.equal(socketState.getGmUrgentUsers().has("u1"), false);
-  assert.deepEqual(socketState.getGmQueue().getAll(), ["u1"]);
+  assert.deepEqual(socketState.getGmQueue().getAll(), []);
 
   game.userId = "u1";
   game.user.id = "u1";
+});
+
+test("active speaker pressing urgent does not clear speaker indication", () => {
+  settingsState.enableQueue = true;
+  game.userId = "gm";
+  game.user.id = "gm";
+  game.user.isGM = true;
+  game.users.activeGM.id = "gm";
+  game.users.get = id => ({ id, name: id, avatar: "" });
+  socketState.getGmQueue().clear();
+  socketState.getGmUrgentUsers().clear();
+  socketState.setGmSpeakerUserId(null);
+  socketState.setGmSceneActive(true);
+
+  handlers.requestQueueJoin("u1");
+  socketState.setGmSpeakerUserId("u1");
+
+  handlers.requestUrgent("u1");
+
+  assert.equal(socketState.getGmSpeakerUserId(), "u1");
+  assert.equal(socketState.getGmUrgentUsers().has("u1"), false);
+
+  const document = new FakeDocument();
+  globalThis.document = document;
+  document.addCameraView("u1");
+  game.userId = "viewer";
+  game.user.id = "viewer";
+  game.user.isGM = false;
+  handlers.syncQueueState(["u1"], [], "u1", true);
+
+  const overlay = document.querySelector("#raise-my-hand-speaker-indication");
+  assert.ok(overlay);
+  assert.equal(overlay.querySelector(".raise-my-hand-speaker-text").textContent, "u1 speaks");
 });
 
 test("urgent hands block yellow spotlight until all urgent users have spoken", () => {
@@ -581,26 +658,36 @@ test("urgent hands block yellow spotlight until all urgent users have spoken", (
   assert.equal(socketState.getGmSpeakerUserId(), null);
 
   handlers.requestSpotlightToggle("red2");
-  assert.equal(socketState.getGmSpeakerUserId(), "red2");
-  assert.equal(socketState.getGmUrgentUsers().has("red2"), false);
+  assert.equal(socketState.getGmSpeakerUserId(), null);
+  assert.equal(socketState.getGmUrgentUsers().has("red2"), true);
   assert.equal(socketState.getGmUrgentUsers().has("red1"), true);
 
-  handlers.requestSpotlightToggle("red2");
+  handlers.requestSpotlightToggle("red1");
   assert.equal(socketState.getGmSpeakerUserId(), "red1");
   assert.equal(socketState.getGmUrgentUsers().has("red1"), false);
-
-  handlers.requestSpotlightToggle("yellow");
-  assert.equal(socketState.getGmSpeakerUserId(), "red1");
-  assert.equal(socketState.getGmUrgentUsers().size, 0);
+  assert.equal(socketState.getGmUrgentUsers().has("red2"), true);
 
   handlers.requestSpotlightToggle("red1");
+  assert.equal(socketState.getGmSpeakerUserId(), "red2");
+  assert.equal(socketState.getGmUrgentUsers().has("red2"), false);
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["yellow", "red2"]);
+
+  handlers.requestSpotlightToggle("yellow");
+  assert.equal(socketState.getGmSpeakerUserId(), "red2");
+  assert.equal(socketState.getGmUrgentUsers().size, 0);
+
+  handlers.requestSpotlightToggle("yellow");
+  assert.equal(socketState.getGmSpeakerUserId(), "red2");
+
+  handlers.requestSpotlightToggle("red2");
   assert.equal(socketState.getGmSpeakerUserId(), "yellow");
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["yellow"]);
 
   game.userId = "u1";
   game.user.id = "u1";
 });
 
-test("urgent waiting indication is red and clears when no urgent hands remain", () => {
+test("urgent waiting is represented in the talking queue without a separate banner", () => {
   settingsState.enableQueue = true;
   const document = new FakeDocument();
   globalThis.document = document;
@@ -609,19 +696,18 @@ test("urgent waiting indication is red and clears when no urgent hands remain", 
   game.user.isGM = false;
   game.users.get = id => ({ id, name: id, avatar: "" });
 
-  handlers.syncQueueState(["u1", "u2"], ["u2"], null, true);
+  handlers.syncQueueState(["urgent"], ["urgent"], null, true);
 
-  const overlay = document.querySelector("#raise-my-hand-speaker-indication");
-  assert.ok(overlay);
-  assert.equal(overlay.querySelector(".raise-my-hand-speaker-text").textContent, "Urgent speaker waiting");
-  assert.equal(overlay.style.getPropertyValue("--raise-my-hand-speaker-color"), "var(--raise-my-hand-red)");
-
-  handlers.syncQueueState(["u1", "u2"], [], null, true);
-
-  assert.equal(document.querySelector("#raise-my-hand-speaker-indication"), null);
+  assert.equal(
+    document.querySelector("#raise-my-hand-speaker-indication")
+      .querySelector(".raise-my-hand-speaker-text")
+      .textContent,
+    "RP scene started"
+  );
+  assert.equal(document.querySelector("#raise-my-hand-urgent-indication"), null);
 });
 
-test("urgent waiting indication stays visible while someone is speaking", () => {
+test("speaker indication includes urgent and normal talking queue order", () => {
   settingsState.enableQueue = true;
   settingsState.speakerIndicationPosition = { x: 40, y: 88 };
   settingsState.handSettings.general.notificationModes = new Set(["camera"]);
@@ -634,19 +720,19 @@ test("urgent waiting indication stays visible while someone is speaking", () => 
   game.user.isGM = false;
   game.users.get = id => ({ id, name: id, avatar: "" });
 
-  handlers.syncQueueState(["speaker", "urgent"], ["urgent"], "speaker", true);
+  handlers.syncQueueState(["speaker", "yellow", "urgent"], ["urgent"], "speaker", true);
 
   const speakerOverlay = document.querySelector("#raise-my-hand-speaker-indication");
   const urgentOverlay = document.querySelector("#raise-my-hand-urgent-indication");
   assert.ok(speakerOverlay);
-  assert.ok(urgentOverlay);
+  assert.equal(urgentOverlay, null);
   assert.equal(speakerOverlay.querySelector(".raise-my-hand-speaker-text").textContent, "speaker speaks");
-  assert.equal(urgentOverlay.querySelector(".raise-my-hand-speaker-text").textContent, "Urgent speaker waiting");
-  assert.equal(urgentOverlay.style.getPropertyValue("--raise-my-hand-speaker-color"), "var(--raise-my-hand-red)");
-  const urgentBanner = urgentOverlay.querySelector(".raise-my-hand-speaker-banner");
-  assert.equal(urgentBanner.style.left, "312px");
-  assert.equal(urgentBanner.style.top, "88px");
-  assert.ok(urgentBanner.classList.contains("is-positioned"));
+  const queueItems = speakerOverlay.querySelectorAll(".raise-my-hand-talking-queue-item");
+  assert.equal(queueItems.length, 2);
+  assert.equal(queueItems[0].textContent, "1urgent");
+  assert.equal(queueItems[0].classList.contains("urgent"), true);
+  assert.equal(queueItems[1].textContent, "2yellow");
+  assert.equal(queueItems[1].classList.contains("urgent"), false);
 });
 
 test("scene indications use status-specific colors", () => {
@@ -694,20 +780,9 @@ test("non-speaking scene indications do not show avatars", () => {
   game.user.isGM = false;
   game.users.get = id => ({ id, name: id, avatar: `icons/${id}.webp` });
 
-  handlers.syncQueueState(["urgent"], ["urgent"], null, true);
-
-  const urgentOverlay = document.querySelector("#raise-my-hand-speaker-indication");
-  assert.ok(urgentOverlay);
-  assert.equal(urgentOverlay.querySelector(".raise-my-hand-speaker-text").textContent, "Urgent speaker waiting");
-  assert.equal(urgentOverlay.querySelector(".raise-my-hand-speaker-avatar"), null);
-
-  handlers.clearPlayerListIcons();
-  const sceneDocument = new FakeDocument();
-  globalThis.document = sceneDocument;
-
   handlers.syncQueueState(["starter"], [], null, true);
 
-  const sceneOverlay = sceneDocument.querySelector("#raise-my-hand-speaker-indication");
+  const sceneOverlay = document.querySelector("#raise-my-hand-speaker-indication");
   assert.ok(sceneOverlay);
   assert.equal(sceneOverlay.querySelector(".raise-my-hand-speaker-text").textContent, "RP scene started");
   assert.equal(sceneOverlay.querySelector(".raise-my-hand-speaker-avatar"), null);
@@ -746,7 +821,7 @@ test("scene indication does not render screen border frame", () => {
   assert.equal(overlay.querySelector(".raise-my-hand-speaker-frame"), null);
 });
 
-test("speaker and urgent indications align before dragging", () => {
+test("speaker indication keeps urgent speaker in the inline queue", () => {
   settingsState.enableQueue = true;
   settingsState.handSettings.general.notificationModes = new Set(["camera"]);
   const document = new FakeDocument();
@@ -760,19 +835,14 @@ test("speaker and urgent indications align before dragging", () => {
 
   handlers.syncQueueState(["speaker", "urgent"], ["urgent"], "speaker", true);
 
-  const speakerBanner = document
-    .querySelector("#raise-my-hand-speaker-indication")
-    .querySelector(".raise-my-hand-speaker-banner");
-  const urgentBanner = document
-    .querySelector("#raise-my-hand-urgent-indication")
-    .querySelector(".raise-my-hand-speaker-banner");
+  const speakerOverlay = document.querySelector("#raise-my-hand-speaker-indication");
+  const urgentOverlay = document.querySelector("#raise-my-hand-urgent-indication");
+  const queueItem = speakerOverlay.querySelector(".raise-my-hand-talking-queue-item");
 
-  assert.equal(speakerBanner.style.top, urgentBanner.style.top);
-  assert.equal(speakerBanner.style.top, "28px");
-  assert.equal(speakerBanner.style.left, "374px");
-  assert.equal(urgentBanner.style.left, "646px");
-  assert.ok(speakerBanner.classList.contains("is-positioned"));
-  assert.ok(urgentBanner.classList.contains("is-positioned"));
+  assert.equal(urgentOverlay, null);
+  assert.ok(queueItem);
+  assert.equal(queueItem.textContent, "1urgent");
+  assert.equal(queueItem.classList.contains("urgent"), true);
 });
 
 test("speaker indication says you are speaking for the local speaker", () => {
@@ -791,7 +861,7 @@ test("speaker indication says you are speaking for the local speaker", () => {
   assert.equal(overlay.querySelector(".raise-my-hand-speaker-text").textContent, "You are speaking");
 });
 
-test("speaker indication uses assigned actor name for remote speaker", () => {
+test("speaker indication uses first actor name word for remote speaker", () => {
   settingsState.enableQueue = true;
   settingsState.handSettings.general.notificationModes = new Set(["camera"]);
   const document = new FakeDocument();
@@ -799,13 +869,13 @@ test("speaker indication uses assigned actor name for remote speaker", () => {
   document.addCameraView("u1");
   game.userId = "viewer";
   game.user.id = "viewer";
-  game.users.get = id => ({ id, name: "Guy", character: { name: "Sir Garrick" }, avatar: "" });
+  game.users.get = id => ({ id, name: "Guy", character: { name: "Amiri (Level 1)" }, avatar: "" });
 
   handlers.syncQueueState(["u1"], [], "u1", true);
 
   const overlay = document.querySelector("#raise-my-hand-speaker-indication");
   assert.ok(overlay);
-  assert.equal(overlay.querySelector(".raise-my-hand-speaker-text").textContent, "Sir Garrick speaks");
+  assert.equal(overlay.querySelector(".raise-my-hand-speaker-text").textContent, "Amiri speaks");
 });
 
 test("speaker indication uses saved client position", () => {
@@ -851,49 +921,6 @@ test("dragging speaker indication saves client position", () => {
   assert.deepEqual(settingWrites.at(-1), {
     key: "speakerIndicationPosition",
     value: { x: 180, y: 136 }
-  });
-});
-
-test("dragging urgent indication moves glued speaker pair", () => {
-  settingsState.enableQueue = true;
-  settingsState.speakerIndicationPosition = { x: 40, y: 88 };
-  settingsState.handSettings.general.notificationModes = new Set(["camera"]);
-  const document = new FakeDocument();
-  globalThis.document = document;
-  document.addCameraView("speaker");
-  document.addCameraView("urgent");
-  game.userId = "viewer";
-  game.user.id = "viewer";
-  game.user.isGM = false;
-  game.users.get = id => ({ id, name: id, avatar: "" });
-
-  handlers.syncQueueState(["speaker", "urgent"], ["urgent"], "speaker", true);
-
-  const speakerBanner = document
-    .querySelector("#raise-my-hand-speaker-indication")
-    .querySelector(".raise-my-hand-speaker-banner");
-  const urgentBanner = document
-    .querySelector("#raise-my-hand-urgent-indication")
-    .querySelector(".raise-my-hand-speaker-banner");
-
-  urgentBanner.dispatchEvent({
-    type: "pointerdown",
-    button: 0,
-    clientX: 320,
-    clientY: 100,
-    preventDefault: () => { },
-    stopPropagation: () => { }
-  });
-  window.dispatchEvent({ type: "pointermove", clientX: 400, clientY: 150 });
-  window.dispatchEvent({ type: "pointerup", clientX: 400, clientY: 150, stopPropagation: () => { } });
-
-  assert.equal(speakerBanner.style.left, "120px");
-  assert.equal(speakerBanner.style.top, "138px");
-  assert.equal(urgentBanner.style.left, "392px");
-  assert.equal(urgentBanner.style.top, "138px");
-  assert.deepEqual(settingWrites.at(-1), {
-    key: "speakerIndicationPosition",
-    value: { x: 120, y: 138 }
   });
 });
 
@@ -945,6 +972,111 @@ test("gm rp scene end clears participants urgent speakers and active scene", () 
   assert.deepEqual(socketState.getGmQueue().getAll(), []);
   assert.equal(socketState.getGmUrgentUsers().size, 0);
   assert.equal(socketState.getGmSpeakerUserId(), null);
+
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+});
+
+test("finishing spotlight advances to the next participant", () => {
+  settingsState.enableQueue = true;
+  game.userId = "gm";
+  game.user.id = "gm";
+  game.user.isGM = true;
+  game.users.activeGM.id = "gm";
+  socketState.getGmQueue().clear();
+  socketState.getGmUrgentUsers().clear();
+  socketState.setGmSpeakerUserId(null);
+  socketState.setGmSceneActive(true);
+
+  handlers.requestQueueJoin("u1");
+  handlers.requestQueueJoin("u2");
+  socketState.setGmSpeakerUserId("u1");
+
+  handlers.requestSpotlightToggle("u1");
+
+  assert.equal(socketState.getGmSpeakerUserId(), "u2");
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["u2"]);
+
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+});
+
+test("delaying spotlight moves speaker behind waiting participants", () => {
+  settingsState.enableQueue = true;
+  game.userId = "gm";
+  game.user.id = "gm";
+  game.user.isGM = true;
+  game.users.activeGM.id = "gm";
+  socketState.getGmQueue().clear();
+  socketState.getGmUrgentUsers().clear();
+  socketState.setGmSpeakerUserId(null);
+  socketState.setGmSceneActive(true);
+
+  handlers.requestQueueJoin("u1");
+  handlers.requestQueueJoin("u2");
+  handlers.requestQueueJoin("u3");
+  socketState.setGmSpeakerUserId("u1");
+
+  handlers.requestSpotlightDelay("u1");
+
+  assert.equal(socketState.getGmSpeakerUserId(), "u2");
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["u2", "u3", "u1"]);
+
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+});
+
+test("only the up-next participant can accept available spotlight", () => {
+  settingsState.enableQueue = true;
+  game.userId = "gm";
+  game.user.id = "gm";
+  game.user.isGM = true;
+  game.users.activeGM.id = "gm";
+  socketState.getGmQueue().clear();
+  socketState.getGmUrgentUsers().clear();
+  socketState.setGmSpeakerUserId(null);
+  socketState.setGmSceneActive(true);
+
+  handlers.requestQueueJoin("u1");
+  handlers.requestQueueJoin("u2");
+
+  handlers.requestSpotlightToggle("u2");
+  assert.equal(socketState.getGmSpeakerUserId(), null);
+
+  handlers.requestSpotlightToggle("u1");
+  assert.equal(socketState.getGmSpeakerUserId(), "u1");
+
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+});
+
+test("urgent users become up-next but still must accept spotlight", () => {
+  settingsState.enableQueue = true;
+  game.userId = "gm";
+  game.user.id = "gm";
+  game.user.isGM = true;
+  game.users.activeGM.id = "gm";
+  socketState.getGmQueue().clear();
+  socketState.getGmUrgentUsers().clear();
+  socketState.setGmSpeakerUserId(null);
+  socketState.setGmSceneActive(true);
+
+  handlers.requestQueueJoin("u1");
+  handlers.requestQueueJoin("u2");
+  handlers.requestUrgent("u2");
+
+  assert.equal(socketState.getGmSpeakerUserId(), null);
+
+  handlers.requestSpotlightToggle("u1");
+  assert.equal(socketState.getGmSpeakerUserId(), null);
+
+  handlers.requestSpotlightToggle("u2");
+  assert.equal(socketState.getGmSpeakerUserId(), "u2");
+  assert.equal(socketState.getGmUrgentUsers().has("u2"), false);
 
   game.userId = "u1";
   game.user.id = "u1";
@@ -1143,7 +1275,7 @@ test("last pending player lowering hand removes start request indication", () =>
   game.users.get = id => ({ id, name: "User", avatar: "" });
 });
 
-test("gm start turns pending requesters into yellow participants without speaker", () => {
+test("gm start makes the first pending requester the active speaker", () => {
   settingsState.enableQueue = true;
   game.userId = "gm";
   game.user.id = "gm";
@@ -1160,12 +1292,66 @@ test("gm start turns pending requesters into yellow participants without speaker
 
   assert.equal(socketState.isGmSceneActive(), true);
   assert.deepEqual(socketState.getGmQueue().getAll(), ["u1"]);
-  assert.equal(socketState.getGmSpeakerUserId(), null);
+  assert.equal(socketState.getGmSpeakerUserId(), "u1");
 
   game.userId = "u1";
   game.user.id = "u1";
   game.user.isGM = false;
   game.users.get = id => ({ id, name: "User", avatar: "" });
+});
+
+test("gm start prioritizes urgent pending requester as active speaker", () => {
+  settingsState.enableQueue = true;
+  game.userId = "gm";
+  game.user.id = "gm";
+  game.user.isGM = true;
+  game.users.activeGM.id = "gm";
+  game.users.get = id => ({ id, name: id, avatar: "" });
+  socketState.getGmQueue().clear();
+  socketState.getGmUrgentUsers().clear();
+  socketState.setGmSpeakerUserId(null);
+  socketState.setGmSceneActive(false);
+
+  handlers.requestQueueJoin("yellow");
+  handlers.requestQueueJoin("red");
+  handlers.requestUrgent("red");
+  handlers.requestSceneStart();
+
+  assert.equal(socketState.isGmSceneActive(), true);
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["yellow", "red"]);
+  assert.equal(socketState.getGmSpeakerUserId(), "red");
+  assert.equal(socketState.getGmUrgentUsers().has("red"), false);
+
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+  game.users.get = id => ({ id, name: "User", avatar: "" });
+});
+
+test("pre-scene request indication shows urgent requester before yellow requester", () => {
+  settingsState.enableQueue = true;
+  const document = new FakeDocument();
+  globalThis.document = document;
+  game.userId = "yellow";
+  game.user.id = "yellow";
+  game.user.isGM = false;
+  game.users.get = id => ({ id, name: id, avatar: "" });
+
+  handlers.syncQueueState(["yellow", "red"], ["red"], null, false);
+  handlers.showSceneStartRequestIndication("yellow");
+
+  const overlay = document.querySelector("#raise-my-hand-speaker-indication");
+  assert.ok(overlay);
+  assert.equal(
+    overlay.querySelector(".raise-my-hand-speaker-text").textContent,
+    "You want to start RP scene"
+  );
+  const queueItems = overlay.querySelectorAll(".raise-my-hand-talking-queue-item");
+  assert.equal(queueItems.length, 2);
+  assert.equal(queueItems[0].textContent, "1red");
+  assert.equal(queueItems[0].classList.contains("urgent"), true);
+  assert.equal(queueItems[1].textContent, "2yellow");
+  assert.equal(queueItems[1].classList.contains("urgent"), false);
 });
 
 test("gm space starts scene only after a player requested it", () => {
@@ -1188,6 +1374,7 @@ test("gm space starts scene only after a player requested it", () => {
 
   assert.equal(socketState.isGmSceneActive(), true);
   assert.deepEqual(socketState.getGmQueue().getAll(), ["u1"]);
+  assert.equal(socketState.getGmSpeakerUserId(), "u1");
 
   game.userId = "u1";
   game.user.id = "u1";
@@ -1293,6 +1480,73 @@ test("player hand raise during active scene shows yellow camera badge", async ()
   assert.equal(badge.classList.contains("urgent"), false);
 });
 
+test("available spotlight marks only the up-next camera badge", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  const document = new FakeDocument();
+  globalThis.document = document;
+  const firstCameraView = document.addCameraView("u1");
+  const secondCameraView = document.addCameraView("u2");
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+  game.users.get = id => ({ id, name: id, avatar: "" });
+
+  handlers.syncQueueState(["u1", "u2"], [], null, true);
+
+  const firstBadge = firstCameraView.querySelector(".raise-my-hand-queue-badge");
+  const secondBadge = secondCameraView.querySelector(".raise-my-hand-queue-badge");
+  assert.equal(firstBadge.classList.contains("next"), true);
+  assert.equal(firstBadge.querySelector(".queue-position").textContent, "1");
+  assert.equal(secondBadge.classList.contains("next"), false);
+  assert.equal(secondBadge.querySelector(".queue-position").textContent, "2");
+});
+
+test("available spotlight marks only the up-next player-list icon", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set(["playerList"]);
+  const document = new FakeDocument();
+  globalThis.document = document;
+  document.addPlayer("u1");
+  document.addPlayer("u2");
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+  game.users.get = id => ({ id, name: id, avatar: "" });
+
+  handlers.syncQueueState(["u1", "u2"], [], null, true);
+  handlers.reapplyQueueIndicators();
+
+  const firstIcon = document.querySelector('[data-user-id="u1"] > .player-name > .raise-my-hand-indicator');
+  const secondIcon = document.querySelector('[data-user-id="u2"] > .player-name > .raise-my-hand-indicator');
+  assert.equal(firstIcon.classList.contains("next"), true);
+  assert.equal(firstIcon.dataset.queuePosition, "1");
+  assert.equal(secondIcon.classList.contains("next"), false);
+  assert.equal(secondIcon.dataset.queuePosition, "2");
+});
+
+test("talking queue renders player-list order even without player-list notifications", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  const document = new FakeDocument();
+  globalThis.document = document;
+  document.addPlayer("u1");
+  document.addPlayer("u2");
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+  game.users.get = id => ({ id, name: id, avatar: "" });
+
+  handlers.syncQueueState(["u1", "u2"], [], null, true);
+
+  const firstIcon = document.querySelector('[data-user-id="u1"] > .player-name > .raise-my-hand-indicator');
+  const secondIcon = document.querySelector('[data-user-id="u2"] > .player-name > .raise-my-hand-indicator');
+  assert.ok(firstIcon);
+  assert.ok(secondIcon);
+  assert.equal(firstIcon.dataset.queuePosition, "1");
+  assert.equal(secondIcon.dataset.queuePosition, "2");
+});
+
 test("scene camera badge renders on camera views outside dock scope", () => {
   settingsState.enableQueue = true;
   settingsState.handSettings.general.notificationModes = new Set([]);
@@ -1350,4 +1604,17 @@ test("clearing an active rp scene requests a controls reset", () => {
   handlers.clearPlayerListIcons();
 
   assert.ok(renderCalls.some(call => call.reset === true));
+});
+
+test("syncing a cleared queue tolerates controls ui not being ready", () => {
+  const controls = ui.controls;
+  ui.controls = undefined;
+
+  try {
+    assert.doesNotThrow(() => {
+      handlers.syncQueueState([], [], null, false);
+    });
+  } finally {
+    ui.controls = controls;
+  }
 });

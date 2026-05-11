@@ -42,7 +42,7 @@ export default class HandConfig extends HandlebarsApplicationMixin(ApplicationV2
    */
   static PARTS = {
     form: {
-      template: "modules/raise-my-hand/templates/settings/menus/hand-config.hbs",
+      template: `modules/${MODULE_ID}/templates/settings/menus/hand-config.hbs`,
       scrollable: [""]
     },
     footer: {

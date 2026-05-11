@@ -132,5 +132,13 @@ export const api = {
    */
   snatchSpotlight() {
     return handHandlers.snatchSpotlight();
+  },
+
+  /**
+   * Delay the current user's spotlight turn.
+   * @returns {void}
+   */
+  delaySpotlight() {
+    return handHandlers.delaySpotlight();
   }
 };

@@ -156,6 +156,15 @@ export function conditionalExecute(scope, handler, ...args) {
  */
 export function initSocket() {
   socket = socketlib.registerModule(MODULE_ID);
+  if (!socket) {
+    const module = game.modules.get(MODULE_ID);
+    console.error(
+      `${MODULE_ID} | socketlib did not return a socket. ` +
+      `Module active: ${module?.active ?? false}; manifest socket: ${module?.socket ?? false}. ` +
+      `If manifest socket is false after editing module.json, restart the Foundry world/server so package sockets are recreated.`
+    );
+    return;
+  }
 
   socket.register("createUiNotification", socketHandlers.createUiNotification);
   socket.register("appendPlayerListIcon", socketHandlers.appendPlayerListIcon);
@@ -173,6 +182,7 @@ export function initSocket() {
   socket.register("requestQueueRemove", socketHandlers.requestQueueRemove);
   socket.register("requestUrgent", socketHandlers.requestUrgent);
   socket.register("requestSpotlightToggle", socketHandlers.requestSpotlightToggle);
+  socket.register("requestSpotlightDelay", socketHandlers.requestSpotlightDelay);
   socket.register("requestSceneStart", socketHandlers.requestSceneStart);
   socket.register("requestSceneEnd", socketHandlers.requestSceneEnd);
   socket.register("showSceneStartRequestIndication", socketHandlers.showSceneStartRequestIndication);

@@ -1,8 +1,4 @@
-/**
- * The module ID used for FoundryVTT module registration and settings.
- * @type {string}
- */
-const MODULE_ID = 'raise-my-hand';
+import { MODULE_ID } from "./module-id.mjs";
 import * as handHandlers from "./handlers/hand.mjs";
 import * as xcardHandlers from "./handlers/xcard.mjs";
 import { isHandRaised, isSceneActive } from "./socket/handlers.mjs";

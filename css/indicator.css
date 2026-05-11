@@ -47,6 +47,15 @@
     color: var(--raise-my-hand-green);
   }
 
+  /* Next state: blue hand */
+  &.next {
+    color: var(--raise-my-hand-blue);
+  }
+
+  &.next[data-queue-position]::after {
+    border-color: var(--raise-my-hand-blue);
+  }
+
   /* Urgent state: red hand */
   &.urgent {
     color: var(--raise-my-hand-red);
