@@ -382,9 +382,10 @@ globalThis.Hooks = {
 };
 globalThis.Handlebars = { registerHelper: () => { } };
 const renderCalls = [];
+const notificationCalls = [];
 globalThis.ui = {
   controls: { controls: { tokens: { tools: {} } }, render: options => renderCalls.push(options ?? {}) },
-  notifications: { info: () => { } }
+  notifications: { info: (...args) => notificationCalls.push(args) }
 };
 globalThis.window = {
   innerWidth: 1280,
@@ -489,6 +490,7 @@ test.beforeEach(() => {
   };
   settingWrites.length = 0;
   renderCalls.length = 0;
+  notificationCalls.length = 0;
   window.eventListeners.clear();
   ui.controls.controls.tokens.tools = {};
 });
@@ -572,13 +574,13 @@ test("spotlight request blocks snatch while another player speaks", () => {
 
   handlers.requestSpotlightToggle("u1");
   assert.equal(socketState.getGmSpeakerUserId(), "u2");
-  assert.deepEqual(socketState.getGmQueue().getAll(), ["u2"]);
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["u2", "u1"]);
 
   game.userId = "u1";
   game.user.id = "u1";
 });
 
-test("urgent participant leaves queue after finishing spotlight", () => {
+test("urgent participant stays queued after finishing spotlight", () => {
   assert.equal(typeof handlers.requestSpotlightToggle, "function");
 
   game.userId = "gm";
@@ -600,7 +602,7 @@ test("urgent participant leaves queue after finishing spotlight", () => {
   handlers.requestSpotlightToggle("u1");
   assert.equal(socketState.getGmSpeakerUserId(), null);
   assert.equal(socketState.getGmUrgentUsers().has("u1"), false);
-  assert.deepEqual(socketState.getGmQueue().getAll(), []);
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["u1"]);
 
   game.userId = "u1";
   game.user.id = "u1";
@@ -639,6 +641,161 @@ test("active speaker pressing urgent does not clear speaker indication", () => {
   assert.equal(overlay.querySelector(".raise-my-hand-speaker-text").textContent, "u1 speaks");
 });
 
+test("active speaker cannot raise a yellow hand", async () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set(["ui"]);
+  settingsState.handSettings.ui = { scope: "all-players", permanent: false };
+  const document = new FakeDocument();
+  globalThis.document = document;
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  game.users.get = id => ({ id, name: id === "u1" ? "Player One" : "GM", avatar: "" });
+  handlers.syncQueueState(["u1"], [], "u1", true);
+
+  const gmCalls = [];
+  const fakeSocket = {
+    register: () => { },
+    executeForAllGMs: (handler, ...args) => gmCalls.push([handler.name, args]),
+    executeForEveryone: (handler, ...args) => handler(...args),
+    executeAsUser: () => { }
+  };
+  socketlib.registerModule = () => fakeSocket;
+  socketState.initSocket();
+
+  await handHandlers.raise({ skipTimeout: true });
+
+  assert.deepEqual(notificationCalls, []);
+  assert.deepEqual(gmCalls, []);
+
+  game.users.get = id => ({ id, name: "User", avatar: "" });
+});
+
+test("active speaker cannot raise a red urgent hand", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  handlers.syncQueueState(["u1"], [], "u1", true);
+
+  const tool = { toggle: true, active: false, title: "" };
+  ui.controls.controls.tokens.tools["raise-hand"] = tool;
+  const gmCalls = [];
+  const fakeSocket = {
+    register: () => { },
+    executeForAllGMs: (handler, ...args) => gmCalls.push([handler.name, args]),
+    executeForEveryone: (handler, ...args) => handler(...args),
+    executeAsUser: () => { }
+  };
+  socketlib.registerModule = () => fakeSocket;
+  socketState.initSocket();
+
+  handHandlers.urgentSpeak();
+
+  assert.equal(tool.active, false);
+  assert.equal(tool.title, "");
+  assert.deepEqual(gmCalls, []);
+});
+
+test("active speaker toolbar toggle cannot stop the active speaker", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  handlers.syncQueueState(["u1"], [], "u1", true);
+
+  const tool = { toggle: true, active: false, title: "" };
+  ui.controls.controls.tokens.tools["raise-hand"] = tool;
+  const gmCalls = [];
+  const fakeSocket = {
+    register: () => { },
+    executeForAllGMs: (handler, ...args) => gmCalls.push([handler.name, args]),
+    executeForEveryone: (handler, ...args) => handler(...args),
+    executeAsUser: () => { }
+  };
+  socketlib.registerModule = () => fakeSocket;
+  socketState.initSocket();
+
+  handHandlers.toggle(false);
+
+  assert.equal(tool.active, true);
+  assert.equal(tool.title, "raise-my-hand.controls.raise-hand.finish");
+  assert.deepEqual(gmCalls, []);
+});
+
+test("raise hand hotkey cannot lower the active speaker hand", () => {
+  assert.equal(typeof handHandlers.handleRaiseHandKeybinding, "function");
+
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  handlers.syncQueueState(["u1"], [], "u1", true);
+
+  let onChangeCalls = 0;
+  const tool = {
+    toggle: true,
+    active: true,
+    title: "raise-my-hand.controls.raise-hand.finish",
+    onChange: () => { onChangeCalls++; }
+  };
+
+  handHandlers.handleRaiseHandKeybinding(tool, { type: "keydown" });
+
+  assert.equal(tool.active, true);
+  assert.equal(tool.title, "raise-my-hand.controls.raise-hand.finish");
+  assert.equal(onChangeCalls, 0);
+});
+
+test("socket lower hand cannot lower active speaker control", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+  handlers.syncQueueState(["u1"], [], "u1", true);
+
+  const tool = { toggle: true, active: true, title: "raise-my-hand.controls.raise-hand.finish" };
+  ui.controls.controls.tokens.tools["raise-hand"] = tool;
+
+  handlers.lowerHandForUser("u1");
+
+  assert.equal(tool.active, true);
+  assert.equal(tool.title, "raise-my-hand.controls.raise-hand.finish");
+});
+
+test("stale lower hand does not fade active speaker player-list icon", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set(["playerList"]);
+  const document = new FakeDocument();
+  globalThis.document = document;
+  document.addPlayer("u1");
+  game.userId = "viewer";
+  game.user.id = "viewer";
+  game.user.isGM = false;
+  handlers.syncQueueState(["u1"], [], "u1", true);
+
+  const icon = document.querySelector('[data-user-id="u1"] > .player-name > .raise-my-hand-indicator');
+  assert.ok(icon);
+  assert.ok(icon.classList.contains("speaking"));
+
+  handlers.removePlayerListIcon("u1");
+
+  assert.equal(
+    document.querySelector('[data-user-id="u1"] > .player-name > .raise-my-hand-indicator'),
+    icon
+  );
+  assert.equal(icon.classList.contains("fade-out"), false);
+  assert.ok(icon.classList.contains("speaking"));
+});
+
 test("urgent hands block yellow spotlight until all urgent users have spoken", () => {
   game.userId = "gm";
   game.user.id = "gm";
@@ -670,7 +827,7 @@ test("urgent hands block yellow spotlight until all urgent users have spoken", (
   handlers.requestSpotlightToggle("red1");
   assert.equal(socketState.getGmSpeakerUserId(), "red2");
   assert.equal(socketState.getGmUrgentUsers().has("red2"), false);
-  assert.deepEqual(socketState.getGmQueue().getAll(), ["yellow", "red2"]);
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["yellow", "red2", "red1"]);
 
   handlers.requestSpotlightToggle("yellow");
   assert.equal(socketState.getGmSpeakerUserId(), "red2");
@@ -681,7 +838,7 @@ test("urgent hands block yellow spotlight until all urgent users have spoken", (
 
   handlers.requestSpotlightToggle("red2");
   assert.equal(socketState.getGmSpeakerUserId(), "yellow");
-  assert.deepEqual(socketState.getGmQueue().getAll(), ["yellow"]);
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["yellow", "red1", "red2"]);
 
   game.userId = "u1";
   game.user.id = "u1";
@@ -978,7 +1135,7 @@ test("gm rp scene end clears participants urgent speakers and active scene", () 
   game.user.isGM = false;
 });
 
-test("finishing spotlight advances to the next participant", () => {
+test("finishing spotlight advances to the next participant without lowering the speaker hand", () => {
   settingsState.enableQueue = true;
   game.userId = "gm";
   game.user.id = "gm";
@@ -996,11 +1153,59 @@ test("finishing spotlight advances to the next participant", () => {
   handlers.requestSpotlightToggle("u1");
 
   assert.equal(socketState.getGmSpeakerUserId(), "u2");
-  assert.deepEqual(socketState.getGmQueue().getAll(), ["u2"]);
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["u2", "u1"]);
 
   game.userId = "u1";
   game.user.id = "u1";
   game.user.isGM = false;
+});
+
+test("lower hand cannot remove the active speaker from the scene queue", () => {
+  settingsState.enableQueue = true;
+  game.userId = "gm";
+  game.user.id = "gm";
+  game.user.isGM = true;
+  game.users.activeGM.id = "gm";
+  socketState.getGmQueue().clear();
+  socketState.getGmUrgentUsers().clear();
+  socketState.setGmSpeakerUserId(null);
+  socketState.setGmSceneActive(true);
+
+  handlers.requestQueueJoin("u1");
+  handlers.requestQueueJoin("u2");
+  socketState.setGmSpeakerUserId("u1");
+
+  handlers.requestQueueRemove("u1");
+
+  assert.equal(socketState.getGmSpeakerUserId(), "u1");
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["u1", "u2"]);
+
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+});
+
+test("lower hand context option is hidden for the active speaker", () => {
+  settingsState.enableQueue = true;
+  game.userId = "gm";
+  game.user.id = "gm";
+  game.user.isGM = true;
+  game.users.activeGM.id = "gm";
+  game.users.get = id => ({ id, name: id, avatar: "" });
+
+  handlers.syncQueueState(["u1", "u2"], [], "u1", true);
+
+  const menuItems = [];
+  controlsModule.getLowerHandContextOptions({}, menuItems);
+  const lowerHandOption = menuItems.at(-1);
+
+  assert.equal(lowerHandOption.condition({ dataset: { userId: "u1" } }), false);
+  assert.equal(lowerHandOption.condition({ dataset: { userId: "u2" } }), true);
+
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+  game.users.get = id => ({ id, name: "User", avatar: "" });
 });
 
 test("delaying spotlight moves speaker behind waiting participants", () => {
@@ -1160,6 +1365,68 @@ test("player hand raise before scene requests gm start without starting scene", 
       .querySelector(".raise-my-hand-speaker-text").textContent,
     "You want to start RP scene"
   );
+
+  game.users.get = id => ({ id, name: "User", avatar: "" });
+});
+
+test("pre-scene ui notification only requires scene spotlight mode", async () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  const document = new FakeDocument();
+  globalThis.document = document;
+  const cameraView = document.addCameraView("u1");
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  game.users.get = id => ({ id, name: id === "u1" ? "Player One" : "GM", avatar: "" });
+  socketState.getGmQueue().clear();
+  socketState.setGmSceneActive(false);
+  handlers.syncQueueState([], [], null, false);
+
+  const controls = { tokens: { tools: {} } };
+  controlsModule.registerTokenControls(controls);
+  ui.controls.controls = controls;
+  const localUser = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
+  const fakeSocket = {
+    register: () => { },
+    executeForAllGMs: (handler, ...args) => {
+      const previous = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
+      game.userId = "gm";
+      game.user.id = "gm";
+      game.user.isGM = true;
+      handler(...args);
+      game.userId = previous.userId;
+      game.user.id = previous.id;
+      game.user.isGM = previous.isGM;
+    },
+    executeForEveryone: (handler, ...args) => {
+      const previous = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
+      game.userId = localUser.userId;
+      game.user.id = localUser.id;
+      game.user.isGM = localUser.isGM;
+      handler(...args);
+      game.userId = previous.userId;
+      game.user.id = previous.id;
+      game.user.isGM = previous.isGM;
+    },
+    executeAsUser: () => { }
+  };
+  socketlib.registerModule = () => fakeSocket;
+  socketState.initSocket();
+
+  await handHandlers.raise({ skipTimeout: true });
+
+  assert.equal(cameraView.querySelector(".raise-my-hand-queue-badge"), null);
+  assert.equal(
+    document.querySelector("#raise-my-hand-speaker-indication")
+      .querySelector(".raise-my-hand-speaker-text").textContent,
+    "You want to start RP scene"
+  );
+  assert.deepEqual(notificationCalls, [[
+    "raise-my-hand.RP_SCENE_START_REQUEST_SELF",
+    { permanent: false }
+  ]]);
 
   game.users.get = id => ({ id, name: "User", avatar: "" });
 });
@@ -1428,7 +1695,7 @@ test("players see indication when gm starts an rp scene", () => {
 
 test("player hand raise during active scene shows yellow camera badge", async () => {
   settingsState.enableQueue = true;
-  settingsState.handSettings.general.notificationModes = new Set([]);
+  settingsState.handSettings.general.notificationModes = new Set(["camera"]);
   const document = new FakeDocument();
   globalThis.document = document;
   const cameraView = document.addCameraView("u1");
@@ -1482,7 +1749,7 @@ test("player hand raise during active scene shows yellow camera badge", async ()
 
 test("available spotlight marks only the up-next camera badge", () => {
   settingsState.enableQueue = true;
-  settingsState.handSettings.general.notificationModes = new Set([]);
+  settingsState.handSettings.general.notificationModes = new Set(["camera"]);
   const document = new FakeDocument();
   globalThis.document = document;
   const firstCameraView = document.addCameraView("u1");
@@ -1549,7 +1816,7 @@ test("talking queue renders player-list order even without player-list notificat
 
 test("scene camera badge renders on camera views outside dock scope", () => {
   settingsState.enableQueue = true;
-  settingsState.handSettings.general.notificationModes = new Set([]);
+  settingsState.handSettings.general.notificationModes = new Set(["camera"]);
   const document = new FakeDocument();
   globalThis.document = document;
   const cameraView = document.addCameraView("u1", { outsideDock: true });

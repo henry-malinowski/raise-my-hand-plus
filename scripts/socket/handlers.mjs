@@ -124,6 +124,22 @@ export function createUiNotification(name, permanent) {
 }
 
 /**
+ * Create a localized UI notification when a player asks to start an RP scene.
+ * @param {string} starterUserId - The user ID that requested the RP scene.
+ * @param {boolean} [permanent=false] - True if the notification should be permanent.
+ * @returns {void}
+ */
+export function createRpSceneStartUiNotification(starterUserId, permanent = false) {
+  const user = game.users.get(starterUserId);
+  if (!user) return;
+
+  const key = starterUserId === game.userId
+    ? "raise-my-hand.RP_SCENE_START_REQUEST_SELF"
+    : "raise-my-hand.RP_SCENE_START_REQUEST";
+  ui.notifications.info(key, { permanent });
+}
+
+/**
  * Escape text for safe HTML insertion.
  * @param {string} value - The untrusted text.
  * @returns {string} Escaped text.
@@ -451,6 +467,14 @@ function syncLocalRaiseHandControl() {
   tool.title = localSpeakerUserId === game.userId
     ? "raise-my-hand.controls.raise-hand.finish"
     : `raise-my-hand.controls.raise-hand.toggle.${active}`;
+}
+
+function isLocalActiveSceneSpeaker(id) {
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  return game.settings.get(MODULE_ID, "enableQueue")
+    && handSettings.general.isToggle
+    && localSceneActive
+    && localSpeakerUserId === id;
 }
 
 /**
@@ -796,6 +820,12 @@ export function appendCameraIndicator(id) {
  * @returns {void}
  */
 export function removePlayerListIcon(id) {
+  if (isLocalActiveSceneSpeaker(id)) {
+    reapplyQueueIndicators();
+    updateCameraQueueBadges();
+    return;
+  }
+
   raisedHands.delete(id);
   removeCameraIndicator(id);
 
@@ -902,6 +932,11 @@ export async function closeHandPopout(id) {
 export function lowerHandForUser(id) {
   // Only lower if it's the current user's toggle
   if (id !== game.userId) return;
+  if (isLocalActiveSceneSpeaker(id)) {
+    syncLocalRaiseHandControl();
+    renderControls();
+    return;
+  }
 
   const tool = getRaiseHandControl();
 
@@ -1042,6 +1077,8 @@ export function requestQueueJoin(userId) {
  */
 export function requestQueueRemove(userId) {
   if (game.users.activeGM?.id !== game.userId) return;
+  if (isGmSceneActive() && getGmSpeakerUserId() === userId) return;
+
   const gmQueue = getGmQueue();
   if (gmQueue.remove(userId)) {
     getGmUrgentUsers().delete(userId);
@@ -1103,8 +1140,8 @@ export function requestSpotlightToggle(userId) {
   const currentSpeaker = getGmSpeakerUserId();
   if (currentSpeaker === userId) {
     getGmUrgentUsers().delete(userId);
-    gmQueue.remove(userId);
-    advanceSpotlight();
+    gmQueue.moveToBack(userId);
+    advanceSpotlight(userId);
     broadcastQueueState();
     return;
   }
@@ -1307,6 +1344,7 @@ export function updateCameraQueueBadges() {
   const handSettings = game.settings.get(MODULE_ID, "handSettings");
   const hasPendingSceneRequest = !localSceneActive && localQueue.length > 0;
   const useQueue = game.settings.get(MODULE_ID, "enableQueue") && handSettings.general.isToggle && (localSceneActive || hasPendingSceneRequest);
+  const useSceneCameraBadges = useQueue && handSettings.general.notificationModes.has("camera");
   const useCameraIndicators = !useQueue && handSettings.general.notificationModes.has("camera");
 
   getCameraViews().forEach(cameraView => {
@@ -1314,23 +1352,23 @@ export function updateCameraQueueBadges() {
     if (!userId) return;
 
     let badge = cameraView.querySelector('.raise-my-hand-queue-badge');
-    const isParticipant = useQueue && localQueue.getPosition(userId) > 0;
-    const isSpeaking = useQueue && userId === localSpeakerUserId;
-    const isUrgent = useQueue && !isSpeaking && urgentUsers.has(userId);
-    const isNext = useQueue && !isSpeaking && isNextLocalSpotlightUser(userId);
+    const isParticipant = useSceneCameraBadges && localQueue.getPosition(userId) > 0;
+    const isSpeaking = useSceneCameraBadges && userId === localSpeakerUserId;
+    const isUrgent = useSceneCameraBadges && !isSpeaking && urgentUsers.has(userId);
+    const isNext = useSceneCameraBadges && !isSpeaking && isNextLocalSpotlightUser(userId);
     const showCameraIndicator = useCameraIndicators && cameraIndicators.has(userId);
-    const showBadge = useQueue ? (isParticipant || isUrgent || isSpeaking) : showCameraIndicator;
+    const showBadge = useSceneCameraBadges ? (isParticipant || isUrgent || isSpeaking) : showCameraIndicator;
 
     if (showBadge) {
       const iconClass = isSpeaking ? 'fa-bullhorn' : 'fa-hand-paper';
 
       badge = renderCameraBadge(cameraView, {
         iconClass,
-        positionText: useQueue ? getQueuePositionText(userId, isSpeaking) : '',
+        positionText: useSceneCameraBadges ? getQueuePositionText(userId, isSpeaking) : '',
         isSpeaking,
         isUrgent,
         isNext,
-        isCameraIndicator: !useQueue
+        isCameraIndicator: !useSceneCameraBadges
       });
     } else if (badge) {
       badge.remove();

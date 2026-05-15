@@ -210,16 +210,7 @@ function registerKeybindings() {
     editable: [{ key: "KeyH", modifiers: []}],
     onDown: (context) => {
       const tool = ui.controls.controls["tokens"].tools["raise-hand"];
-      if (!tool) return; // this can happen if the control is not registered yet or all modes are disabled
-
-      // Manual toggle required: ui.controls.activate({toggles}) only works for by
-      // force-switching to "tokens" control, which is undesirable for our use case.
-      if (tool.toggle) {
-        tool.active = !tool.active; // toggle the control state to simulate an onChange event
-        tool.onChange(context.event, tool.active);
-      } else {
-        tool.onChange(context.event, true);
-      }
+      return handHandlers.handleRaiseHandKeybinding(tool, context.event);
     },
     reservedModifiers: []
   });

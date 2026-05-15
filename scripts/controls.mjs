@@ -1,7 +1,7 @@
 import { MODULE_ID } from "./module-id.mjs";
 import * as handHandlers from "./handlers/hand.mjs";
 import * as xcardHandlers from "./handlers/xcard.mjs";
-import { isHandRaised, isSceneActive } from "./socket/handlers.mjs";
+import { getSpeakerUserId, isHandRaised, isSceneActive } from "./socket/handlers.mjs";
 import HandSettingsData from "./data/settings/HandSettingsData.mjs";
 import XCardSettingsData from "./data/settings/XCardSettingsData.mjs";
 import ScopeField from "./data/settings/ScopeField.mjs";
@@ -120,6 +120,9 @@ export function getLowerHandContextOptions(app, menuItems) {
 
       // only show if the user is a GM and the target user is the same as the current user
       if (!game.user.isGM && (game.user.id !== targetUserId)) return false;
+
+      // The active speaker must finish/delay spotlight, not lower their queue hand.
+      if (isSceneActive() && getSpeakerUserId() === targetUserId) return false;
       
       // Check if the hand is presently raised for the target user
       return isHandRaised(targetUserId, handSettings);

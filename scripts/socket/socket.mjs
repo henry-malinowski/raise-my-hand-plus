@@ -167,6 +167,7 @@ export function initSocket() {
   }
 
   socket.register("createUiNotification", socketHandlers.createUiNotification);
+  socket.register("createRpSceneStartUiNotification", socketHandlers.createRpSceneStartUiNotification);
   socket.register("appendPlayerListIcon", socketHandlers.appendPlayerListIcon);
   socket.register("appendCameraIndicator", socketHandlers.appendCameraIndicator);
   socket.register("removePlayerListIcon", socketHandlers.removePlayerListIcon);

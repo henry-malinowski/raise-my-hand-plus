@@ -1,5 +1,5 @@
 {
-  "id": "raise-my-hand-plus",
+  "id": "raise-my-hand",
   "title": "✋ Raise My Hand",
   "description": "Adds a 'Raise my hand' button that displays a small alert on GM screens that the player would like attention.",
   "authors": [
@@ -9,18 +9,14 @@
       "discord": "hmalinowski",
       "flags": {}
     }
-  ],  
-  "version": "3.1.0",
+  ],
+  "version": "3.2.0",
   "compatibility": {
     "minimum": "13",
     "verified": "14.352"
   },
-  "esmodules": [
-    "scripts/raise-my-hand.mjs"
-  ],
-  "styles": [
-    "css/raise-my-hand.css"
-  ],
+  "esmodules": ["scripts/raise-my-hand.mjs"],
+  "styles": ["css/raise-my-hand.css"],
   "languages": [
     {
       "lang": "en",

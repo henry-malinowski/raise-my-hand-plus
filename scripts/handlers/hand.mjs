@@ -2,9 +2,24 @@ import { MODULE_ID } from "../raise-my-hand.mjs";
 import { checkAndUpdateTimeout } from "./helpers.mjs";
 import { conditionalExecute, getActiveGmUserIds, getGmQueue, getSocket } from "../socket/socket.mjs";
 import { playSoundWithReplacement } from "./helpers.mjs";
-import { appendPlayerListIcon, appendCameraIndicator, createUiNotification, createHandPopout, removePlayerListIcon, closeHandPopout, lowerHandForUser, trackHandRaised, requestQueueJoin, requestQueueRemove, requestUrgent, requestSpotlightToggle, requestSpotlightDelay, requestSceneStart, requestSceneEnd, isHandRaised, isSceneActive, getSpeakerUserId } from "../socket/handlers.mjs";
+import { appendPlayerListIcon, appendCameraIndicator, createUiNotification, createRpSceneStartUiNotification, createHandPopout, removePlayerListIcon, closeHandPopout, lowerHandForUser, trackHandRaised, requestQueueJoin, requestQueueRemove, requestUrgent, requestSpotlightToggle, requestSpotlightDelay, requestSceneStart, requestSceneEnd, isHandRaised, isSceneActive, getSpeakerUserId } from "../socket/handlers.mjs";
 
 const { renderTemplate } = foundry.applications.handlebars;
+
+function isActiveSceneSpeaker(userId) {
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  return game.settings.get(MODULE_ID, "enableQueue")
+    && handSettings.general.isToggle
+    && isSceneActive()
+    && getSpeakerUserId() === userId;
+}
+
+function lockActiveSpeakerControl() {
+  const tool = ui.controls.controls["tokens"]?.tools["raise-hand"];
+  if (tool?.toggle) tool.active = true;
+  if (tool) tool.title = "raise-my-hand.controls.raise-hand.finish";
+  ui.controls.render();
+}
 
 /**
  * Toggle the hand raise/lower state.
@@ -12,18 +27,39 @@ const { renderTemplate } = foundry.applications.handlebars;
  * @returns {void}
  */
 export function toggle(active) {
-  const handSettings = game.settings.get(MODULE_ID, "handSettings");
-  const isSceneMode = game.settings.get(MODULE_ID, "enableQueue") && handSettings.general.isToggle && isSceneActive();
-  if (!active && isSceneMode && getSpeakerUserId() === game.userId) {
-    getSocket()?.executeForAllGMs(requestSpotlightToggle, game.userId);
-    ui.controls.controls["tokens"].tools["raise-hand"].title = "raise-my-hand.controls.raise-hand.finish";
-    ui.controls.render();
+  if (isActiveSceneSpeaker(game.userId)) {
+    lockActiveSpeakerControl();
     return;
   }
 
   active ? raise({ skipTimeout: true }) : lower();
   ui.controls.controls["tokens"].tools["raise-hand"].title = `raise-my-hand.controls.raise-hand.toggle.${active}`;
   ui.controls.render();
+}
+
+/**
+ * Handle the raise-hand keybinding without allowing active speakers to lower
+ * their scene hand by toggling the tool state.
+ * @param {object} tool - The raise-hand scene control tool.
+ * @param {Event} event - The keybinding event.
+ * @returns {boolean} Whether the keybinding was handled.
+ */
+export function handleRaiseHandKeybinding(tool, event) {
+  if (!tool) return false;
+
+  if (tool.toggle) {
+    if (isActiveSceneSpeaker(game.userId)) {
+      lockActiveSpeakerControl();
+      return true;
+    }
+
+    tool.active = !tool.active;
+    tool.onChange(event, tool.active);
+    return true;
+  }
+
+  tool.onChange(event, true);
+  return true;
 }
 
 /**
@@ -45,9 +81,12 @@ export async function raise({ skipTimeout = false } = {}) {
   }
   const handSettings = game.settings.get(MODULE_ID, "handSettings");
   const isSceneMode = game.settings.get(MODULE_ID, "enableQueue") && handSettings.general.isToggle;
+  if (isActiveSceneSpeaker(id)) return;
+
   if (isSceneMode && !isSceneActive()) {
     if (!game.user.isGM) {
       const socket = getSocket();
+      socket?.executeForEveryone(createRpSceneStartUiNotification, id);
       socket?.executeForAllGMs(requestQueueJoin, id);
     }
     return;
@@ -167,6 +206,7 @@ export async function raise({ skipTimeout = false } = {}) {
 export function lower() {
   const socket = getSocket();
   const id = game.userId;
+  if (isActiveSceneSpeaker(id)) return;
 
   // always attempt remove regardless of settings as they
   // could've changed after the hand was raised
@@ -192,6 +232,8 @@ export function urgentSpeak() {
   const socket = getSocket();
   const handSettings = game.settings.get(MODULE_ID, "handSettings");
   const isSceneMode = game.settings.get(MODULE_ID, "enableQueue") && handSettings.general.isToggle;
+  if (isActiveSceneSpeaker(id)) return;
+
   if (isSceneMode && !isSceneActive()) {
     if (!game.user.isGM) {
       const tool = ui.controls.controls["tokens"]?.tools["raise-hand"];
@@ -298,6 +340,8 @@ export function toggleRpScene() {
  * @returns {void}
  */
 export function lowerForUser(userId) {
+  if (isActiveSceneSpeaker(userId)) return;
+
   const socket = getSocket();
 
   // Remove the player list icon and close any popout for the specified user
