@@ -1,7 +1,7 @@
 import { MODULE_ID } from "./module-id.mjs";
 import * as handHandlers from "./handlers/hand.mjs";
 import * as xcardHandlers from "./handlers/xcard.mjs";
-import { getSpeakerUserId, isHandRaised, isSceneActive } from "./socket/handlers.mjs";
+import { getSpeakerUserId, isHandRaised, isSceneActive, isUrgentHandRaised } from "./socket/handlers.mjs";
 import HandSettingsData from "./data/settings/HandSettingsData.mjs";
 import XCardSettingsData from "./data/settings/XCardSettingsData.mjs";
 import ScopeField from "./data/settings/ScopeField.mjs";
@@ -21,6 +21,7 @@ export function registerTokenControls(controls) {
   const handSettings = game.settings.get(MODULE_ID, "handSettings");
   const isQueueMode = handSettings.general.isToggle && game.settings.get(MODULE_ID, "enableQueue");
   const isGmSceneController = isQueueMode && game.user.isGM;
+  const isActiveSceneSpeaker = isQueueMode && isSceneActive() && getSpeakerUserId() === game.userId;
   const playerSceneControlsVisible = !isQueueMode || !game.user.isGM;
 
   /**
@@ -41,6 +42,7 @@ export function registerTokenControls(controls) {
     active: isQueueMode && isSceneActive() && !game.user.isGM && isHandRaised(game.userId, handSettings),
     visible: !isGmSceneController
       && playerSceneControlsVisible
+      && !isActiveSceneSpeaker
       && (handSettings.general.notificationModes.size > 0 || isQueueMode),
     ...(handSettings.general.isToggle
       ? { onChange: (event, active) => handHandlers.toggle(active) }
@@ -67,10 +69,12 @@ export function registerTokenControls(controls) {
     title: isQueueMode ? 'raise-my-hand.controls.urgent-speak.name' : 'raise-my-hand.controls.show-xcard.name',
     icon: isQueueMode ? 'fas fa-hand-paper' : 'fas fa-times',
     order: Object.keys(tokenControlsTools).length,
-    button: true,
-    visible: isQueueMode ? !game.user.isGM : xCardSettings.isEnabled,
+    button: !isQueueMode,
+    toggle: isQueueMode,
+    active: isQueueMode && isUrgentHandRaised(game.userId),
+    visible: isQueueMode ? !game.user.isGM && !isActiveSceneSpeaker : xCardSettings.isEnabled,
     onChange: isQueueMode
-      ? (event, active) => handHandlers.urgentSpeak()
+      ? (event, active) => handHandlers.urgentSpeak(active)
       : (event, active) => xcardHandlers.showXCardDialog(),
     toolclip: {
       src: `modules/${MODULE_ID}/assets/toolclips/tools/token-xcard.webm`,

@@ -2,7 +2,7 @@ import { MODULE_ID } from "../raise-my-hand.mjs";
 import { checkAndUpdateTimeout } from "./helpers.mjs";
 import { conditionalExecute, getActiveGmUserIds, getGmQueue, getSocket } from "../socket/socket.mjs";
 import { playSoundWithReplacement } from "./helpers.mjs";
-import { appendPlayerListIcon, appendCameraIndicator, createUiNotification, createRpSceneStartUiNotification, createHandPopout, removePlayerListIcon, closeHandPopout, lowerHandForUser, trackHandRaised, requestQueueJoin, requestQueueRemove, requestUrgent, requestSpotlightToggle, requestSpotlightDelay, requestSceneStart, requestSceneEnd, isHandRaised, isSceneActive, getSpeakerUserId } from "../socket/handlers.mjs";
+import { appendPlayerListIcon, appendCameraIndicator, createUiNotification, createHandPopout, removePlayerListIcon, closeHandPopout, lowerHandForUser, trackHandRaised, requestQueueJoin, requestQueueRemove, requestUrgent, requestSpotlightToggle, requestSpotlightDelay, requestSceneStart, requestSceneEnd, isHandRaised, isSceneActive, getSpeakerUserId } from "../socket/handlers.mjs";
 
 const { renderTemplate } = foundry.applications.handlebars;
 
@@ -32,8 +32,10 @@ export function toggle(active) {
     return;
   }
 
+  const tool = ui.controls.controls["tokens"]?.tools["raise-hand"];
+  if (tool?.toggle) tool.active = Boolean(active);
+  if (tool) tool.title = `raise-my-hand.controls.raise-hand.toggle.${active}`;
   active ? raise({ skipTimeout: true }) : lower();
-  ui.controls.controls["tokens"].tools["raise-hand"].title = `raise-my-hand.controls.raise-hand.toggle.${active}`;
   ui.controls.render();
 }
 
@@ -86,7 +88,6 @@ export async function raise({ skipTimeout = false } = {}) {
   if (isSceneMode && !isSceneActive()) {
     if (!game.user.isGM) {
       const socket = getSocket();
-      socket?.executeForEveryone(createRpSceneStartUiNotification, id);
       socket?.executeForAllGMs(requestQueueJoin, id);
     }
     return;
@@ -227,12 +228,18 @@ export function lower() {
  * If the user's hand is not raised, it will be raised and the toggle asserted.
  * @returns {void}
  */
-export function urgentSpeak() {
+export function urgentSpeak(active = null) {
   const id = game.userId;
   const socket = getSocket();
   const handSettings = game.settings.get(MODULE_ID, "handSettings");
   const isSceneMode = game.settings.get(MODULE_ID, "enableQueue") && handSettings.general.isToggle;
   if (isActiveSceneSpeaker(id)) return;
+
+  const urgentTool = ui.controls.controls["tokens"]?.tools["show-xcard"];
+  if (isSceneMode && urgentTool && active !== null) {
+    urgentTool.active = Boolean(active);
+    ui.controls.render();
+  }
 
   if (isSceneMode && !isSceneActive()) {
     if (!game.user.isGM) {

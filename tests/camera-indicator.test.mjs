@@ -229,6 +229,17 @@ class FakeElement {
 }
 
 function matchesSelector(element, selector) {
+  if (selector.startsWith('button.control.tool[data-tool="')) {
+    const toolName = selector.match(/data-tool="([^"]+)"/)?.[1];
+    return element.tagName === "button"
+      && element.classList.contains("control")
+      && element.classList.contains("tool")
+      && element.dataset.tool === toolName;
+  }
+  if (selector.startsWith('[data-tool="')) {
+    const toolName = selector.match(/data-tool="([^"]+)"/)?.[1];
+    return element.dataset.tool === toolName;
+  }
   if (selector.startsWith(".camera-view[data-user=")) {
     const userId = selector.match(/data-user="([^"]+)"/)?.[1];
     return element.classList.contains("camera-view") && element.dataset.user === userId;
@@ -306,7 +317,11 @@ class FakeDocument {
     if (selector === ".raise-my-hand-indicator") return this.playersRoot.querySelectorAll(selector);
     if (selector === "#raise-my-hand-speaker-indication") return this.querySelector(selector) ? [this.querySelector(selector)] : [];
     if (selector === "#raise-my-hand-urgent-indication") return this.querySelector(selector) ? [this.querySelector(selector)] : [];
-    return [];
+    return [
+      ...this.body.querySelectorAll(selector),
+      ...this.cameraRoot.querySelectorAll(selector),
+      ...this.playersRoot.querySelectorAll(selector)
+    ];
   }
 
   addCameraView(userId, { outsideDock = false } = {}) {
@@ -1307,6 +1322,357 @@ test("players see hand controls but no rp scene button while inactive", () => {
   assert.equal(controls.tokens.tools["rp-scene"], undefined);
 });
 
+test("active speaker does not see raise or urgent toolbar buttons", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  handlers.syncQueueState(["u1", "u2"], [], "u1", true);
+
+  const controls = { tokens: { tools: {} } };
+  controlsModule.registerTokenControls(controls);
+
+  assert.equal(controls.tokens.tools["raise-hand"].visible, false);
+  assert.equal(controls.tokens.tools["show-xcard"].visible, false);
+});
+
+test("non-speaking player still sees raise and urgent toolbar buttons", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u2";
+  game.user.id = "u2";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  handlers.syncQueueState(["u1"], [], "u1", true);
+
+  const controls = { tokens: { tools: {} } };
+  controlsModule.registerTokenControls(controls);
+
+  assert.equal(controls.tokens.tools["raise-hand"].visible, true);
+  assert.equal(controls.tokens.tools["show-xcard"].visible, true);
+});
+
+test("urgent toolbar button highlights when local player has urgent hand", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u2";
+  game.user.id = "u2";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  handlers.syncQueueState(["u1", "u2"], ["u2"], "u1", true);
+
+  const controls = { tokens: { tools: {} } };
+  controlsModule.registerTokenControls(controls);
+
+  const urgentTool = controls.tokens.tools["show-xcard"];
+  assert.equal(urgentTool.button, false);
+  assert.equal(urgentTool.toggle, true);
+  assert.equal(urgentTool.active, true);
+});
+
+test("urgent toolbar button syncs active state from queue updates", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u2";
+  game.user.id = "u2";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  ui.controls.controls.tokens.tools["show-xcard"] = { active: false, title: "" };
+
+  renderCalls.length = 0;
+  handlers.syncQueueState(["u1", "u2"], ["u2"], "u1", true);
+  assert.equal(ui.controls.controls.tokens.tools["show-xcard"].active, true);
+  assert.ok(renderCalls.length > 0);
+
+  renderCalls.length = 0;
+  handlers.syncQueueState(["u1", "u2"], [], "u1", true);
+  assert.equal(ui.controls.controls.tokens.tools["show-xcard"].active, false);
+  assert.ok(renderCalls.length > 0);
+});
+
+test("urgent handler immediately reflects requested toolbar active state", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u2";
+  game.user.id = "u2";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  handlers.syncQueueState(["u1", "u2"], [], "u1", true);
+  ui.controls.controls.tokens.tools["show-xcard"] = { active: false, title: "" };
+  const fakeSocket = {
+    register: () => { },
+    executeForAllGMs: () => { },
+    executeForEveryone: () => { },
+    executeAsUser: () => { }
+  };
+  socketlib.registerModule = () => fakeSocket;
+  socketState.initSocket();
+
+  renderCalls.length = 0;
+  handHandlers.urgentSpeak(true);
+
+  assert.equal(ui.controls.controls.tokens.tools["show-xcard"].active, true);
+  assert.ok(renderCalls.length > 0);
+});
+
+test("urgent handler keeps yellow hand highlighted when urgent is stopped", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u2";
+  game.user.id = "u2";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  handlers.syncQueueState(["u1", "u2"], ["u2"], "u1", true);
+  ui.controls.controls.tokens.tools["raise-hand"] = {
+    toggle: true,
+    active: false,
+    title: "raise-my-hand.controls.raise-hand.toggle.true"
+  };
+  ui.controls.controls.tokens.tools["show-xcard"] = { active: true, title: "" };
+  const fakeSocket = {
+    register: () => { },
+    executeForAllGMs: () => { },
+    executeForEveryone: () => { },
+    executeAsUser: () => { }
+  };
+  socketlib.registerModule = () => fakeSocket;
+  socketState.initSocket();
+
+  renderCalls.length = 0;
+  handHandlers.urgentSpeak(false);
+
+  assert.equal(ui.controls.controls.tokens.tools["show-xcard"].active, false);
+  assert.equal(ui.controls.controls.tokens.tools["raise-hand"].active, true);
+  assert.equal(
+    ui.controls.controls.tokens.tools["raise-hand"].title,
+    "raise-my-hand.controls.raise-hand.toggle.true"
+  );
+  assert.ok(renderCalls.length > 0);
+});
+
+test("urgent sync re-renders when restoring yellow hand highlight", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u2";
+  game.user.id = "u2";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  handlers.syncQueueState(["u1", "u2"], ["u2"], "u1", true);
+  ui.controls.controls.tokens.tools["raise-hand"] = {
+    toggle: true,
+    active: false,
+    title: "raise-my-hand.controls.raise-hand.toggle.true"
+  };
+  ui.controls.controls.tokens.tools["show-xcard"] = { active: false, title: "" };
+
+  renderCalls.length = 0;
+  handlers.syncQueueState(["u1", "u2"], [], "u1", true);
+
+  assert.equal(ui.controls.controls.tokens.tools["raise-hand"].active, true);
+  assert.equal(ui.controls.controls.tokens.tools["show-xcard"].active, false);
+  assert.ok(renderCalls.length > 0);
+});
+
+test("urgent sync restores yellow control button active class", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  const document = new FakeDocument();
+  globalThis.document = document;
+  const yellowButton = document.createElement("button");
+  yellowButton.className = "control tool";
+  yellowButton.dataset.tool = "raise-hand";
+  const urgentButton = document.createElement("button");
+  urgentButton.className = "control tool active";
+  urgentButton.dataset.tool = "show-xcard";
+  document.body.appendChild(yellowButton);
+  document.body.appendChild(urgentButton);
+  game.userId = "u2";
+  game.user.id = "u2";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  handlers.syncQueueState(["u1", "u2"], ["u2"], "u1", true);
+  ui.controls.controls.tokens.tools["raise-hand"] = {
+    toggle: true,
+    active: false,
+    title: "raise-my-hand.controls.raise-hand.toggle.true"
+  };
+  ui.controls.controls.tokens.tools["show-xcard"] = { active: false, title: "" };
+  yellowButton.classList.remove("active");
+  urgentButton.classList.remove("active");
+
+  handlers.syncQueueState(["u1", "u2"], [], "u1", true);
+
+  assert.equal(yellowButton.classList.contains("active"), true);
+  assert.equal(urgentButton.classList.contains("active"), false);
+});
+
+test("yellow handler immediately reflects requested toolbar active state", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u2";
+  game.user.id = "u2";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  handlers.syncQueueState(["u1"], [], "u1", true);
+  ui.controls.controls.tokens.tools["raise-hand"] = { toggle: true, active: false, title: "" };
+  const fakeSocket = {
+    register: () => { },
+    executeForAllGMs: () => { },
+    executeForEveryone: () => { },
+    executeAsUser: () => { }
+  };
+  socketlib.registerModule = () => fakeSocket;
+  socketState.initSocket();
+
+  renderCalls.length = 0;
+  handHandlers.toggle(true);
+
+  assert.equal(ui.controls.controls.tokens.tools["raise-hand"].active, true);
+  assert.equal(
+    ui.controls.controls.tokens.tools["raise-hand"].title,
+    "raise-my-hand.controls.raise-hand.toggle.true"
+  );
+  assert.ok(renderCalls.length > 0);
+});
+
+test("urgent-only toolbar flow keeps yellow highlighted when urgent is toggled off", async () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u2";
+  game.user.id = "u2";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  game.users.get = id => ({ id, name: id, avatar: "" });
+  socketState.getGmQueue().clear();
+  socketState.getGmQueue().add("u1");
+  socketState.getGmUrgentUsers().clear();
+  socketState.setGmSpeakerUserId("u1");
+  socketState.setGmSceneActive(true);
+  handlers.syncQueueState(["u1"], [], "u1", true);
+
+  const controls = { tokens: { tools: {} } };
+  controlsModule.registerTokenControls(controls);
+  ui.controls.controls = controls;
+  const localUser = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
+  const fakeSocket = {
+    register: () => { },
+    executeForAllGMs: (handler, ...args) => {
+      const previous = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
+      game.userId = "gm";
+      game.user.id = "gm";
+      game.user.isGM = true;
+      handler(...args);
+      game.userId = previous.userId;
+      game.user.id = previous.id;
+      game.user.isGM = previous.isGM;
+    },
+    executeForEveryone: (handler, ...args) => {
+      const previous = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
+      game.userId = localUser.userId;
+      game.user.id = localUser.id;
+      game.user.isGM = localUser.isGM;
+      handler(...args);
+      game.userId = previous.userId;
+      game.user.id = previous.id;
+      game.user.isGM = previous.isGM;
+    },
+    executeAsUser: () => { }
+  };
+  socketlib.registerModule = () => fakeSocket;
+  socketState.initSocket();
+
+  const yellowTool = controls.tokens.tools["raise-hand"];
+  const urgentTool = controls.tokens.tools["show-xcard"];
+  urgentTool.active = true;
+  urgentTool.onChange({}, true);
+  await Promise.resolve();
+
+  assert.equal(yellowTool.active, true);
+  assert.equal(urgentTool.active, true);
+
+  yellowTool.active = false;
+  urgentTool.active = false;
+  urgentTool.onChange({}, false);
+  await Promise.resolve();
+
+  assert.equal(yellowTool.active, true);
+  assert.equal(urgentTool.active, false);
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["u1", "u2"]);
+  assert.equal(socketState.getGmUrgentUsers().has("u2"), false);
+});
+
+test("urgent pre-scene request highlights both urgent and yellow buttons", async () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  const document = new FakeDocument();
+  globalThis.document = document;
+  const yellowButton = document.createElement("button");
+  yellowButton.className = "control tool";
+  yellowButton.dataset.tool = "raise-hand";
+  const urgentButton = document.createElement("button");
+  urgentButton.className = "control tool";
+  urgentButton.dataset.tool = "show-xcard";
+  document.body.appendChild(yellowButton);
+  document.body.appendChild(urgentButton);
+  game.userId = "u2";
+  game.user.id = "u2";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  game.users.get = id => ({ id, name: id, avatar: "" });
+  socketState.getGmQueue().clear();
+  socketState.getGmUrgentUsers().clear();
+  socketState.setGmSpeakerUserId(null);
+  socketState.setGmSceneActive(false);
+  handlers.syncQueueState([], [], null, false);
+
+  const controls = { tokens: { tools: {} } };
+  controlsModule.registerTokenControls(controls);
+  ui.controls.controls = controls;
+  const localUser = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
+  const fakeSocket = {
+    register: () => { },
+    executeForAllGMs: (handler, ...args) => {
+      const previous = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
+      game.userId = "gm";
+      game.user.id = "gm";
+      game.user.isGM = true;
+      handler(...args);
+      game.userId = previous.userId;
+      game.user.id = previous.id;
+      game.user.isGM = previous.isGM;
+    },
+    executeForEveryone: (handler, ...args) => {
+      const previous = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
+      game.userId = localUser.userId;
+      game.user.id = localUser.id;
+      game.user.isGM = localUser.isGM;
+      handler(...args);
+      game.userId = previous.userId;
+      game.user.id = previous.id;
+      game.user.isGM = previous.isGM;
+    },
+    executeAsUser: () => { }
+  };
+  socketlib.registerModule = () => fakeSocket;
+  socketState.initSocket();
+
+  const yellowTool = controls.tokens.tools["raise-hand"];
+  const urgentTool = controls.tokens.tools["show-xcard"];
+  urgentTool.active = true;
+  urgentTool.onChange({}, true);
+  await Promise.resolve();
+
+  assert.equal(yellowTool.active, true);
+  assert.equal(urgentTool.active, true);
+  assert.equal(yellowButton.classList.contains("active"), true);
+  assert.equal(urgentButton.classList.contains("active"), true);
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["u2"]);
+  assert.equal(socketState.getGmUrgentUsers().has("u2"), true);
+  assert.equal(socketState.isGmSceneActive(), false);
+});
+
 test("player hand raise before scene requests gm start without starting scene", async () => {
   settingsState.enableQueue = true;
   settingsState.handSettings.general.notificationModes = new Set(["playerList", "camera"]);
@@ -1369,7 +1735,7 @@ test("player hand raise before scene requests gm start without starting scene", 
   game.users.get = id => ({ id, name: "User", avatar: "" });
 });
 
-test("pre-scene ui notification only requires scene spotlight mode", async () => {
+test("pre-scene scene indication does not create a core ui notification", async () => {
   settingsState.enableQueue = true;
   settingsState.handSettings.general.notificationModes = new Set([]);
   const document = new FakeDocument();
@@ -1423,10 +1789,7 @@ test("pre-scene ui notification only requires scene spotlight mode", async () =>
       .querySelector(".raise-my-hand-speaker-text").textContent,
     "You want to start RP scene"
   );
-  assert.deepEqual(notificationCalls, [[
-    "raise-my-hand.RP_SCENE_START_REQUEST_SELF",
-    { permanent: false }
-  ]]);
+  assert.deepEqual(notificationCalls, []);
 
   game.users.get = id => ({ id, name: "User", avatar: "" });
 });
@@ -1747,6 +2110,91 @@ test("player hand raise during active scene shows yellow camera badge", async ()
   assert.equal(badge.classList.contains("urgent"), false);
 });
 
+test("non-speaking player can raise hand during active scene without player-list notifications", async () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u2";
+  game.user.id = "u2";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  game.users.get = id => ({ id, name: id, avatar: "" });
+  socketState.getGmQueue().clear();
+  socketState.getGmQueue().add("u1");
+  socketState.getGmUrgentUsers().clear();
+  socketState.setGmSpeakerUserId("u1");
+  socketState.setGmSceneActive(true);
+  handlers.syncQueueState(["u1"], [], "u1", true);
+
+  const localUser = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
+  const fakeSocket = {
+    register: () => { },
+    executeForAllGMs: (handler, ...args) => {
+      const previous = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
+      game.userId = "gm";
+      game.user.id = "gm";
+      game.user.isGM = true;
+      handler(...args);
+      game.userId = previous.userId;
+      game.user.id = previous.id;
+      game.user.isGM = previous.isGM;
+    },
+    executeForEveryone: (handler, ...args) => {
+      handler(...args);
+      game.userId = localUser.userId;
+      game.user.id = localUser.id;
+      game.user.isGM = localUser.isGM;
+    },
+    executeAsUser: () => { }
+  };
+  socketlib.registerModule = () => fakeSocket;
+  socketState.initSocket();
+
+  await handHandlers.raise({ skipTimeout: true });
+
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["u1", "u2"]);
+  assert.equal(socketState.getGmSpeakerUserId(), "u1");
+});
+
+test("non-speaking player can raise urgent hand during active scene without player-list notifications", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  game.userId = "u2";
+  game.user.id = "u2";
+  game.user.isGM = false;
+  game.users.activeGM.id = "gm";
+  game.users.get = id => ({ id, name: id, avatar: "" });
+  socketState.getGmQueue().clear();
+  socketState.getGmQueue().add("u1");
+  socketState.getGmUrgentUsers().clear();
+  socketState.setGmSpeakerUserId("u1");
+  socketState.setGmSceneActive(true);
+  handlers.syncQueueState(["u1"], [], "u1", true);
+
+  const fakeSocket = {
+    register: () => { },
+    executeForAllGMs: (handler, ...args) => {
+      const previous = { userId: game.userId, id: game.user.id, isGM: game.user.isGM };
+      game.userId = "gm";
+      game.user.id = "gm";
+      game.user.isGM = true;
+      handler(...args);
+      game.userId = previous.userId;
+      game.user.id = previous.id;
+      game.user.isGM = previous.isGM;
+    },
+    executeForEveryone: (handler, ...args) => handler(...args),
+    executeAsUser: () => { }
+  };
+  socketlib.registerModule = () => fakeSocket;
+  socketState.initSocket();
+
+  handHandlers.urgentSpeak();
+
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["u1", "u2"]);
+  assert.equal(socketState.getGmUrgentUsers().has("u2"), true);
+  assert.equal(socketState.getGmSpeakerUserId(), "u1");
+});
+
 test("available spotlight marks only the up-next camera badge", () => {
   settingsState.enableQueue = true;
   settingsState.handSettings.general.notificationModes = new Set(["camera"]);
@@ -1792,7 +2240,7 @@ test("available spotlight marks only the up-next player-list icon", () => {
   assert.equal(secondIcon.dataset.queuePosition, "2");
 });
 
-test("talking queue renders player-list order even without player-list notifications", () => {
+test("talking queue does not render player-list icons without player-list notifications", () => {
   settingsState.enableQueue = true;
   settingsState.handSettings.general.notificationModes = new Set([]);
   const document = new FakeDocument();
@@ -1808,10 +2256,36 @@ test("talking queue renders player-list order even without player-list notificat
 
   const firstIcon = document.querySelector('[data-user-id="u1"] > .player-name > .raise-my-hand-indicator');
   const secondIcon = document.querySelector('[data-user-id="u2"] > .player-name > .raise-my-hand-indicator');
-  assert.ok(firstIcon);
-  assert.ok(secondIcon);
-  assert.equal(firstIcon.dataset.queuePosition, "1");
-  assert.equal(secondIcon.dataset.queuePosition, "2");
+  assert.equal(firstIcon, null);
+  assert.equal(secondIcon, null);
+});
+
+test("player-list icons are removed when player-list notifications are disabled", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set(["playerList"]);
+  const document = new FakeDocument();
+  globalThis.document = document;
+  document.addPlayer("u1");
+  document.addPlayer("u2");
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+  game.users.get = id => ({ id, name: id, avatar: "" });
+
+  handlers.syncQueueState(["u1", "u2"], [], null, true);
+  assert.ok(document.querySelector('[data-user-id="u1"] > .player-name > .raise-my-hand-indicator'));
+
+  settingsState.handSettings.general.notificationModes = new Set([]);
+  handlers.syncQueueState(["u1", "u2"], [], null, true);
+
+  assert.equal(
+    document.querySelector('[data-user-id="u1"] > .player-name > .raise-my-hand-indicator'),
+    null
+  );
+  assert.equal(
+    document.querySelector('[data-user-id="u2"] > .player-name > .raise-my-hand-indicator'),
+    null
+  );
 });
 
 test("scene camera badge renders on camera views outside dock scope", () => {

@@ -124,22 +124,6 @@ export function createUiNotification(name, permanent) {
 }
 
 /**
- * Create a localized UI notification when a player asks to start an RP scene.
- * @param {string} starterUserId - The user ID that requested the RP scene.
- * @param {boolean} [permanent=false] - True if the notification should be permanent.
- * @returns {void}
- */
-export function createRpSceneStartUiNotification(starterUserId, permanent = false) {
-  const user = game.users.get(starterUserId);
-  if (!user) return;
-
-  const key = starterUserId === game.userId
-    ? "raise-my-hand.RP_SCENE_START_REQUEST_SELF"
-    : "raise-my-hand.RP_SCENE_START_REQUEST";
-  ui.notifications.info(key, { permanent });
-}
-
-/**
  * Escape text for safe HTML insertion.
  * @param {string} value - The untrusted text.
  * @returns {string} Escaped text.
@@ -443,6 +427,10 @@ function getRaiseHandControl() {
   return ui.controls?.controls?.["tokens"]?.tools?.["raise-hand"];
 }
 
+function getUrgentHandControl() {
+  return ui.controls?.controls?.["tokens"]?.tools?.["show-xcard"];
+}
+
 /**
  * Render Foundry controls if the controls UI is ready.
  * @param {object} [options] - Render options forwarded to Foundry.
@@ -453,6 +441,19 @@ function renderControls(options) {
   ui.controls?.render?.(options);
 }
 
+function setControlButtonActive(toolName, active) {
+  const button = document.querySelector(`button.control.tool[data-tool="${toolName}"]`)
+    ?? document.querySelector(`[data-tool="${toolName}"]`);
+  button?.classList?.toggle("active", Boolean(active));
+}
+
+function removeRenderedPlayerListIndicators() {
+  document.querySelectorAll(`.raise-my-hand-indicator`).forEach(icon => {
+    if (icon.dataset.timeoutId) clearTimeout(parseInt(icon.dataset.timeoutId));
+    icon.remove();
+  });
+}
+
 /**
  * Reflect synced scene membership on the local Raise Hand toggle.
  * @returns {void}
@@ -460,13 +461,28 @@ function renderControls(options) {
  */
 function syncLocalRaiseHandControl() {
   const tool = getRaiseHandControl();
-  if (!tool) return;
+  if (!tool) return false;
 
-  const active = localSceneActive && localQueue.getPosition(game.userId) > 0;
-  tool.active = active;
-  tool.title = localSpeakerUserId === game.userId
+  const active = localQueue.getPosition(game.userId) > 0;
+  const title = localSpeakerUserId === game.userId
     ? "raise-my-hand.controls.raise-hand.finish"
     : `raise-my-hand.controls.raise-hand.toggle.${active}`;
+  const changed = tool.active !== active || tool.title !== title;
+  tool.active = active;
+  tool.title = title;
+  setControlButtonActive("raise-hand", active);
+  return changed;
+}
+
+function syncLocalUrgentHandControl() {
+  const tool = getUrgentHandControl();
+  if (!tool) return false;
+
+  const active = urgentUsers.has(game.userId) && localSpeakerUserId !== game.userId;
+  const changed = tool.active !== active;
+  tool.active = active;
+  setControlButtonActive("show-xcard", active);
+  return changed;
 }
 
 function isLocalActiveSceneSpeaker(id) {
@@ -867,6 +883,11 @@ export function clearPlayerListIcons() {
     tool.title = "raise-my-hand.controls.raise-hand.toggle.false";
     renderControls();
   }
+  const urgentTool = getUrgentHandControl();
+  if (urgentTool?.active) {
+    urgentTool.active = false;
+    renderControls();
+  }
   if (wasSceneActive) renderControls({ reset: true });
   // Remove all camera queue badges and cinematic badges
   document.querySelectorAll('.raise-my-hand-queue-badge').forEach(badge => badge.remove());
@@ -1029,6 +1050,15 @@ export function getRaisedHands() {
  */
 export function getUrgentUsers() {
   return urgentUsers;
+}
+
+/**
+ * Check whether a user is marked urgent in the local scene mirror.
+ * @param {string} userId - The user ID to inspect
+ * @returns {boolean} True when the user has an urgent hand raised
+ */
+export function isUrgentHandRaised(userId) {
+  return urgentUsers.has(userId);
 }
 
 /**
@@ -1223,12 +1253,14 @@ export function requestSceneEnd() {
  */
 export function syncQueueState(orderedUserIds, urgentUserIds = [], speakerUserId = null, sceneActive = orderedUserIds.length > 0 || Boolean(speakerUserId)) {
   const wasSceneActive = localSceneActive;
+  const wasActiveSceneSpeaker = localSceneActive && localSpeakerUserId === game.userId;
   localQueue.replace(orderedUserIds);
   urgentUsers.clear();
   for (const id of urgentUserIds) urgentUsers.add(id);
   localSpeakerUserId = speakerUserId;
   localSceneActive = Boolean(sceneActive);
   const shouldShowSceneStarted = !wasSceneActive && localSceneActive && !localSpeakerUserId;
+  const isActiveSceneSpeaker = localSceneActive && localSpeakerUserId === game.userId;
 
   if (!localSceneActive && localQueue.length === 0) {
     clearPlayerListIcons();
@@ -1237,6 +1269,9 @@ export function syncQueueState(orderedUserIds, urgentUserIds = [], speakerUserId
   }
 
   if (!localSceneActive) {
+    const raiseControlChanged = syncLocalRaiseHandControl();
+    const urgentControlChanged = syncLocalUrgentHandControl();
+    if (raiseControlChanged || urgentControlChanged) renderControls();
     updateCameraQueueBadges();
     if (activeSceneIndication?.type === "request") {
       showSceneStartRequestIndication(activeSceneIndication.userId);
@@ -1245,10 +1280,14 @@ export function syncQueueState(orderedUserIds, urgentUserIds = [], speakerUserId
     return;
   }
 
-  syncLocalRaiseHandControl();
-  if (wasSceneActive !== localSceneActive) {
+  const raiseControlChanged = syncLocalRaiseHandControl();
+  const urgentControlChanged = syncLocalUrgentHandControl();
+  if (wasSceneActive !== localSceneActive || wasActiveSceneSpeaker !== isActiveSceneSpeaker) {
     renderControls({ reset: true });
     syncLocalRaiseHandControl();
+    syncLocalUrgentHandControl();
+  } else if (raiseControlChanged || urgentControlChanged) {
+    renderControls();
   }
 
   reapplyQueueIndicators();
@@ -1292,9 +1331,13 @@ export function syncQueueState(orderedUserIds, urgentUserIds = [], speakerUserId
 export function reapplyQueueIndicators() {
   const handSettings = game.settings.get(MODULE_ID, "handSettings");
   if (!handSettings.general.isToggle) return;
+  if (!handSettings.general.notificationModes.has("playerList")) {
+    removeRenderedPlayerListIndicators();
+    emitStateChanged();
+    return;
+  }
 
   const useQueue = game.settings.get(MODULE_ID, "enableQueue") && localSceneActive;
-  if (!useQueue && !handSettings.general.notificationModes.has("playerList")) return;
   const users = useQueue ? localQueue.getAll() : [...raisedHands];
 
   for (const userId of users) {
