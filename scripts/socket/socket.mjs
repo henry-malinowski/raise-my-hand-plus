@@ -183,6 +183,7 @@ export function initSocket() {
   socket.register("requestUrgent", socketHandlers.requestUrgent);
   socket.register("requestSpotlightToggle", socketHandlers.requestSpotlightToggle);
   socket.register("requestSpotlightDelay", socketHandlers.requestSpotlightDelay);
+  socket.register("requestSpotlightOverride", socketHandlers.requestSpotlightOverride);
   socket.register("requestSceneStart", socketHandlers.requestSceneStart);
   socket.register("requestSceneEnd", socketHandlers.requestSceneEnd);
   socket.register("showSceneStartRequestIndication", socketHandlers.showSceneStartRequestIndication);

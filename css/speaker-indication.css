@@ -38,6 +38,10 @@
   animation: raise-my-hand-speaker-banner 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+.raise-my-hand-speaker-banner.is-sized {
+  max-width: 94vw;
+}
+
 .raise-my-hand-speaker-banner.is-positioned {
   right: auto;
   bottom: auto;
@@ -102,6 +106,17 @@
   box-shadow: 0 0 18px color-mix(in srgb, var(--raise-my-hand-red) 22%, transparent);
 }
 
+.raise-my-hand-talking-queue-item.is-gm-control {
+  cursor: pointer;
+}
+
+.raise-my-hand-talking-queue-item.is-gm-control:hover,
+.raise-my-hand-talking-queue-item.is-gm-control:focus-visible {
+  border-color: color-mix(in srgb, var(--raise-my-hand-green) 70%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--raise-my-hand-green) 28%, transparent);
+  outline: none;
+}
+
 .raise-my-hand-talking-queue-position {
   display: inline-grid;
   place-items: center;
@@ -120,6 +135,21 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1;
+}
+
+.raise-my-hand-speaker-resize {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  background:
+    linear-gradient(135deg, transparent 0 45%, color-mix(in srgb, var(--raise-my-hand-speaker-text) 55%, transparent) 46% 52%, transparent 53%),
+    linear-gradient(135deg, transparent 0 62%, color-mix(in srgb, var(--raise-my-hand-speaker-text) 35%, transparent) 63% 69%, transparent 70%);
+  cursor: nwse-resize;
+  pointer-events: auto;
 }
 
 @keyframes raise-my-hand-speaker-banner {

@@ -298,6 +298,17 @@ function getSpeakerIndicationPosition() {
 }
 
 /**
+ * Read the client-saved speaker indication size.
+ * @returns {{width: number, height: number}|null}
+ * @private
+ */
+function getSpeakerIndicationSize() {
+  const value = game.settings.get(MODULE_ID, "speakerIndicationSize");
+  if (!value || !Number.isFinite(value.width) || !Number.isFinite(value.height)) return null;
+  return { width: value.width, height: value.height };
+}
+
+/**
  * Clamp the speaker banner position inside the viewport.
  * @param {number} x - Desired left position in pixels.
  * @param {number} y - Desired top position in pixels.
@@ -315,6 +326,45 @@ function clampSpeakerIndicationPosition(x, y, banner) {
     x: Math.round(Math.min(Math.max(0, x), maxX)),
     y: Math.round(Math.min(Math.max(0, y), maxY))
   };
+}
+
+/**
+ * Clamp the speaker banner size inside useful viewport bounds.
+ * @param {number} width - Desired width in pixels.
+ * @param {number} height - Desired minimum height in pixels.
+ * @returns {{width: number, height: number}}
+ * @private
+ */
+function clampSpeakerIndicationSize(width, height) {
+  const viewportWidth = globalThis.window?.innerWidth || 1280;
+  const viewportHeight = globalThis.window?.innerHeight || 720;
+  return {
+    width: Math.round(Math.min(Math.max(260, width), Math.max(260, viewportWidth * 0.94))),
+    height: Math.round(Math.min(Math.max(68, height), Math.max(68, viewportHeight * 0.8)))
+  };
+}
+
+/**
+ * Apply a saved/free size to the speaker banner.
+ * @param {HTMLElement} banner - The speaker banner element.
+ * @param {{width: number, height: number}|null} size - Saved size, or null for default.
+ * @returns {void}
+ * @private
+ */
+function applySpeakerIndicationSize(banner, size) {
+  if (!banner) return;
+
+  if (!size) {
+    banner.classList.remove("is-sized");
+    banner.style.width = "";
+    banner.style.minHeight = "";
+    return;
+  }
+
+  const clamped = clampSpeakerIndicationSize(size.width, size.height);
+  banner.classList.add("is-sized");
+  banner.style.width = `${clamped.width}px`;
+  banner.style.minHeight = `${clamped.height}px`;
 }
 
 /**
@@ -361,6 +411,7 @@ function bindSpeakerIndicationDrag(banner) {
 
   banner.addEventListener("pointerdown", event => {
     if (event.button != null && event.button !== 0) return;
+    if (event.target?.closest?.(".raise-my-hand-speaker-resize, .raise-my-hand-talking-queue-item")) return;
     event.preventDefault?.();
     event.stopPropagation?.();
 
@@ -386,6 +437,91 @@ function bindSpeakerIndicationDrag(banner) {
 
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
+  });
+}
+
+/**
+ * Make an indication banner resizable from the bottom-right corner.
+ * @param {HTMLElement} banner - The speaker banner element.
+ * @returns {void}
+ * @private
+ */
+function bindSpeakerIndicationResize(banner) {
+  const handle = banner?.querySelector(".raise-my-hand-speaker-resize");
+  if (!banner || !handle || handle.dataset.resizeBound === "true") return;
+  handle.dataset.resizeBound = "true";
+
+  handle.addEventListener("pointerdown", event => {
+    if (event.button != null && event.button !== 0) return;
+    event.preventDefault?.();
+    event.stopPropagation?.();
+
+    const startWidth = banner.offsetWidth || 260;
+    const startHeight = banner.offsetHeight || 68;
+    const startX = event.clientX;
+    const startY = event.clientY;
+    let current = clampSpeakerIndicationSize(startWidth, startHeight);
+
+    const move = moveEvent => {
+      current = clampSpeakerIndicationSize(
+        startWidth + (moveEvent.clientX - startX),
+        startHeight + (moveEvent.clientY - startY)
+      );
+      applySpeakerIndicationSize(banner, current);
+    };
+
+    const up = upEvent => {
+      upEvent.stopPropagation?.();
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      current = clampSpeakerIndicationSize(
+        startWidth + (upEvent.clientX - startX),
+        startHeight + (upEvent.clientY - startY)
+      );
+      applySpeakerIndicationSize(banner, current);
+      game.settings.set(MODULE_ID, "speakerIndicationSize", current);
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  });
+}
+
+function requestSpotlightOverrideFromQueue(userId) {
+  if (!game.user.isGM || !userId) return;
+  if (game.users.activeGM?.id === game.userId) {
+    requestSpotlightOverride(userId);
+    return;
+  }
+
+  const socket = getSocket();
+  socket?.executeForAllGMs(requestSpotlightOverride, userId);
+}
+
+/**
+ * Let the GM click a queue chip to force the active speaker.
+ * @param {HTMLElement} banner - The speaker banner element.
+ * @returns {void}
+ * @private
+ */
+function bindTalkingQueueControls(banner) {
+  if (!banner || !game.user.isGM) return;
+  banner.querySelectorAll(".raise-my-hand-talking-queue-item").forEach(item => {
+    if (!item.dataset.userId || item.dataset.controlBound === "true") return;
+    item.dataset.controlBound = "true";
+    item.classList.add("is-gm-control");
+    item.tabIndex = 0;
+    item.addEventListener("click", event => {
+      event.preventDefault?.();
+      event.stopPropagation?.();
+      requestSpotlightOverrideFromQueue(item.dataset.userId);
+    });
+    item.addEventListener("keydown", event => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault?.();
+      event.stopPropagation?.();
+      requestSpotlightOverrideFromQueue(item.dataset.userId);
+    });
   });
 }
 
@@ -422,7 +558,7 @@ function renderTalkingQueueHtml() {
   if (items.length === 0) return "";
 
   const itemHtml = items.map(item => `
-        <li class="raise-my-hand-talking-queue-item ${item.urgent ? "urgent" : "normal"}">
+        <li class="raise-my-hand-talking-queue-item ${item.urgent ? "urgent" : "normal"}" data-user-id="${escapeHtml(item.id)}">
           <span class="raise-my-hand-talking-queue-position">${item.position}</span>
           <span class="raise-my-hand-talking-queue-name">${escapeHtml(item.name)}</span>
         </li>
@@ -547,12 +683,16 @@ function showSceneIndication(userId, text, type = "speaker", shouldShowAvatar = 
       ${showAvatar ? '<div class="raise-my-hand-speaker-avatar"></div>' : ""}
       <div class="raise-my-hand-speaker-text">${escapeHtml(text)}</div>
       ${queueHtml}
+      <span class="raise-my-hand-speaker-resize" aria-hidden="true"></span>
     </div>
   `;
 
   const banner = root.querySelector(".raise-my-hand-speaker-banner");
+  applySpeakerIndicationSize(banner, getSpeakerIndicationSize());
   applySpeakerIndicationPosition(banner, getSpeakerIndicationPosition());
   bindSpeakerIndicationDrag(banner);
+  bindSpeakerIndicationResize(banner);
+  bindTalkingQueueControls(banner);
 
   if (showAvatar && user.avatar) {
     root.querySelector(".raise-my-hand-speaker-avatar").style.backgroundImage = `url("${user.avatar.replace(/["\\]/g, "\\$&")}")`;
@@ -1233,6 +1373,22 @@ export function requestSpotlightDelay(userId) {
   gmUrgent.delete(userId);
   gmUrgent.delete(nextSpeaker);
   setGmSpeakerUserId(nextSpeaker);
+  broadcastQueueState();
+}
+
+/**
+ * Let the active GM directly choose a queued participant as the current speaker.
+ * The previous speaker remains in the queue.
+ * @param {string} userId - The queued user ID to make speaker.
+ * @returns {void}
+ */
+export function requestSpotlightOverride(userId) {
+  if (game.users.activeGM?.id !== game.userId) return;
+  if (!isGmSceneActive()) return;
+  if (getGmQueue().getPosition(userId) === 0) return;
+
+  getGmUrgentUsers().delete(userId);
+  setGmSpeakerUserId(userId);
   broadcastQueueState();
 }
 

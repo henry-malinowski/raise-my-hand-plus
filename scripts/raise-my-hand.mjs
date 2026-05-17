@@ -133,6 +133,14 @@ function registerSettings() {
     onChange: () => updateCameraQueueBadges()
   });
 
+  game.settings.register(MODULE_ID, 'speakerIndicationSize', {
+    scope: 'client',
+    config: false,
+    default: null,
+    type: Object,
+    onChange: () => updateCameraQueueBadges()
+  });
+
   // Hand Settings object (hidden from main config, shown in dedicated menu)
   game.settings.register(MODULE_ID, "handSettings", {
     scope: 'world',

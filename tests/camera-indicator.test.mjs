@@ -151,10 +151,16 @@ class FakeElement {
         for (const match of value.matchAll(/<li class="([^"]*)"[^>]*>([\s\S]*?)<\/li>/g)) {
           const item = new FakeElement("li");
           item.className = match[1];
+          item.dataset.userId = match[0].match(/data-user-id="([^"]+)"/)?.[1] ?? "";
           item.textContent = match[2].replace(/<[^>]+>/g, "").replace(/\s+/g, "");
           queue.appendChild(item);
         }
         banner.appendChild(queue);
+      }
+      if (value.includes("raise-my-hand-speaker-resize")) {
+        const resize = new FakeElement("button");
+        resize.className = "raise-my-hand-speaker-resize";
+        banner.appendChild(resize);
       }
       this.appendChild(banner);
       return;
@@ -423,6 +429,7 @@ const settingsState = {
   enableQueue: false,
   speakerIndication: true,
   speakerIndicationPosition: null,
+  speakerIndicationSize: null,
   xCardSettings: { isEnabled: false, scope: "all-players", anonymousWarning: false },
   handSettings: {
     general: {
@@ -457,6 +464,7 @@ globalThis.game = {
       if (key === "enableQueue") return settingsState.enableQueue;
       if (key === "speakerIndication") return settingsState.speakerIndication;
       if (key === "speakerIndicationPosition") return settingsState.speakerIndicationPosition;
+      if (key === "speakerIndicationSize") return settingsState.speakerIndicationSize;
       if (key === "handSettings") return settingsState.handSettings;
       if (key === "xCardSettings") return settingsState.xCardSettings;
       return undefined;
@@ -494,6 +502,7 @@ test.beforeEach(() => {
   settingsState.enableQueue = false;
   settingsState.speakerIndication = true;
   settingsState.speakerIndicationPosition = null;
+  settingsState.speakerIndicationSize = null;
   settingsState.xCardSettings = { isEnabled: false, scope: "all-players", anonymousWarning: false };
   settingsState.handSettings = {
     general: {
@@ -1094,6 +1103,104 @@ test("dragging speaker indication saves client position", () => {
     key: "speakerIndicationPosition",
     value: { x: 180, y: 136 }
   });
+});
+
+test("speaker indication uses saved client size", () => {
+  settingsState.enableQueue = true;
+  settingsState.speakerIndicationSize = { width: 520, height: 140 };
+  settingsState.handSettings.general.notificationModes = new Set(["camera"]);
+  const document = new FakeDocument();
+  globalThis.document = document;
+  document.addCameraView("u1");
+
+  handlers.syncQueueState(["u1"], [], "u1", true);
+
+  const banner = document
+    .querySelector("#raise-my-hand-speaker-indication")
+    .querySelector(".raise-my-hand-speaker-banner");
+  assert.equal(banner.style.width, "520px");
+  assert.equal(banner.style.minHeight, "140px");
+});
+
+test("dragging speaker indication resize handle saves client size", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set(["camera"]);
+  const document = new FakeDocument();
+  globalThis.document = document;
+  document.addCameraView("u1");
+
+  handlers.syncQueueState(["u1"], [], "u1", true);
+
+  const banner = document
+    .querySelector("#raise-my-hand-speaker-indication")
+    .querySelector(".raise-my-hand-speaker-banner");
+  banner.offsetWidth = 300;
+  banner.offsetHeight = 90;
+  const resize = banner.querySelector(".raise-my-hand-speaker-resize");
+  assert.ok(resize);
+
+  resize.dispatchEvent({
+    type: "pointerdown",
+    button: 0,
+    clientX: 300,
+    clientY: 90,
+    preventDefault: () => { },
+    stopPropagation: () => { }
+  });
+  window.dispatchEvent({ type: "pointermove", clientX: 460, clientY: 150 });
+  window.dispatchEvent({ type: "pointerup", clientX: 460, clientY: 150 });
+
+  assert.deepEqual(settingWrites.at(-1), {
+    key: "speakerIndicationSize",
+    value: { width: 460, height: 150 }
+  });
+  assert.equal(banner.style.left, "");
+  assert.equal(banner.style.top, "");
+});
+
+test("gm clicking a talking queue item makes that player speaker", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set(["camera"]);
+  const document = new FakeDocument();
+  globalThis.document = document;
+  document.addCameraView("u1");
+  document.addCameraView("u2");
+  game.userId = "gm";
+  game.user.id = "gm";
+  game.user.isGM = true;
+  game.users.activeGM.id = "gm";
+  game.users.get = id => ({ id, name: id, avatar: "" });
+  socketState.getGmQueue().clear();
+  socketState.getGmUrgentUsers().clear();
+  socketState.setGmSpeakerUserId(null);
+  socketState.setGmSceneActive(true);
+
+  handlers.requestQueueJoin("u1");
+  handlers.requestQueueJoin("u2");
+  socketState.setGmSpeakerUserId("u1");
+  socketState.getGmUrgentUsers().add("u2");
+  handlers.syncQueueState(["u1", "u2"], ["u2"], "u1", true);
+
+  const queueItem = document
+    .querySelector("#raise-my-hand-speaker-indication")
+    .querySelector(".raise-my-hand-talking-queue-item");
+  assert.equal(queueItem.dataset.userId, "u2");
+
+  queueItem.dispatchEvent({
+    type: "click",
+    currentTarget: queueItem,
+    preventDefault: () => { },
+    stopPropagation: () => { }
+  });
+
+  assert.equal(socketState.getGmSpeakerUserId(), "u2");
+  assert.equal(socketState.getGmUrgentUsers().has("u2"), false);
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["u1", "u2"]);
+
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+  game.users.get = id => ({ id, name: "User", avatar: "" });
 });
 
 test("gm rp scene controls replace hand controls in scene spotlight mode", () => {
