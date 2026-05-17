@@ -1102,6 +1102,7 @@ test("gm rp scene controls replace hand controls in scene spotlight mode", () =>
   game.userId = "gm";
   game.user.id = "gm";
   game.user.isGM = true;
+  handlers.syncQueueState(["u1"], [], null, false);
 
   const controls = { tokens: { tools: {} } };
   controlsModule.registerTokenControls(controls);
@@ -1111,6 +1112,61 @@ test("gm rp scene controls replace hand controls in scene spotlight mode", () =>
   assert.equal(controls.tokens.tools["show-xcard"].visible, false);
   assert.ok(controls.tokens.tools["rp-scene"]);
   assert.equal(controls.tokens.tools["rp-scene"].visible, true);
+
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+});
+
+test("gm rp scene start control is hidden until a player requests scene start", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set(["playerList"]);
+  game.userId = "gm";
+  game.user.id = "gm";
+  game.user.isGM = true;
+
+  handlers.syncQueueState([], [], null, false);
+  const idleControls = { tokens: { tools: {} } };
+  controlsModule.registerTokenControls(idleControls);
+
+  assert.ok(idleControls.tokens.tools["rp-scene"]);
+  assert.equal(idleControls.tokens.tools["rp-scene"].visible, false);
+
+  handlers.syncQueueState(["u1"], [], null, false);
+  const pendingControls = { tokens: { tools: {} } };
+  controlsModule.registerTokenControls(pendingControls);
+
+  assert.equal(pendingControls.tokens.tools["rp-scene"].visible, true);
+  assert.equal(pendingControls.tokens.tools["rp-scene"].title, "raise-my-hand.controls.rp-scene.start");
+
+  handlers.syncQueueState(["u1"], [], "u1", true);
+  const activeControls = { tokens: { tools: {} } };
+  controlsModule.registerTokenControls(activeControls);
+
+  assert.equal(activeControls.tokens.tools["rp-scene"].visible, true);
+  assert.equal(activeControls.tokens.tools["rp-scene"].title, "raise-my-hand.controls.rp-scene.end");
+
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+});
+
+test("pending scene request changes reset gm scene controls", () => {
+  settingsState.enableQueue = true;
+  settingsState.handSettings.general.notificationModes = new Set(["playerList"]);
+  game.userId = "gm";
+  game.user.id = "gm";
+  game.user.isGM = true;
+
+  handlers.syncQueueState([], [], null, false);
+  renderCalls.length = 0;
+
+  handlers.syncQueueState(["u1"], [], null, false);
+  assert.ok(renderCalls.some(call => call.reset === true));
+
+  renderCalls.length = 0;
+  handlers.syncQueueState([], [], null, false);
+  assert.ok(renderCalls.some(call => call.reset === true));
 
   game.userId = "u1";
   game.user.id = "u1";

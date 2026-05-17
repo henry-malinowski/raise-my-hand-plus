@@ -1,7 +1,7 @@
 import { MODULE_ID } from "./module-id.mjs";
 import * as handHandlers from "./handlers/hand.mjs";
 import * as xcardHandlers from "./handlers/xcard.mjs";
-import { getSpeakerUserId, isHandRaised, isSceneActive, isUrgentHandRaised } from "./socket/handlers.mjs";
+import { getSpeakerUserId, hasPendingSceneStartRequest, isHandRaised, isSceneActive, isUrgentHandRaised } from "./socket/handlers.mjs";
 import HandSettingsData from "./data/settings/HandSettingsData.mjs";
 import XCardSettingsData from "./data/settings/XCardSettingsData.mjs";
 import ScopeField from "./data/settings/ScopeField.mjs";
@@ -85,13 +85,14 @@ export function registerTokenControls(controls) {
 
   if (isQueueMode && game.user.isGM) {
     const active = isSceneActive();
+    const visible = active || hasPendingSceneStartRequest();
     tokenControlsTools['rp-scene'] = {
       name: 'rp-scene',
       title: active ? 'raise-my-hand.controls.rp-scene.end' : 'raise-my-hand.controls.rp-scene.start',
       icon: active ? 'fas fa-stop' : 'fas fa-play',
       order: Object.keys(tokenControlsTools).length,
       button: true,
-      visible: true,
+      visible,
       onChange: () => handHandlers.toggleRpScene()
     };
   }

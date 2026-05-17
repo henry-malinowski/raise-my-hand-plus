@@ -1096,6 +1096,14 @@ export function isSceneActive() {
 }
 
 /**
+ * Check whether there is a pending player request to start the RP scene.
+ * @returns {boolean}
+ */
+export function hasPendingSceneStartRequest() {
+  return !localSceneActive && localQueue.length > 0;
+}
+
+/**
  * Handle a request to join the scene participant list.
  * Only the active GM processes this; other GMs and players ignore it.
  * @param {string} userId - The user ID requesting to join
@@ -1279,24 +1287,27 @@ export function requestSceneEnd() {
 export function syncQueueState(orderedUserIds, urgentUserIds = [], speakerUserId = null, sceneActive = orderedUserIds.length > 0 || Boolean(speakerUserId)) {
   const wasSceneActive = localSceneActive;
   const wasActiveSceneSpeaker = localSceneActive && localSpeakerUserId === game.userId;
+  const hadPendingSceneStartRequest = hasPendingSceneStartRequest();
   localQueue.replace(orderedUserIds);
   urgentUsers.clear();
   for (const id of urgentUserIds) urgentUsers.add(id);
   localSpeakerUserId = speakerUserId;
   localSceneActive = Boolean(sceneActive);
+  const pendingSceneStartRequestChanged = game.user.isGM && hadPendingSceneStartRequest !== hasPendingSceneStartRequest();
   const shouldShowSceneStarted = !wasSceneActive && localSceneActive && !localSpeakerUserId;
   const isActiveSceneSpeaker = localSceneActive && localSpeakerUserId === game.userId;
 
   if (!localSceneActive && localQueue.length === 0) {
     clearPlayerListIcons();
-    if (wasSceneActive !== localSceneActive) renderControls({ reset: true });
+    if (wasSceneActive !== localSceneActive || pendingSceneStartRequestChanged) renderControls({ reset: true });
     return;
   }
 
   if (!localSceneActive) {
     const raiseControlChanged = syncLocalRaiseHandControl();
     const urgentControlChanged = syncLocalUrgentHandControl();
-    if (raiseControlChanged || urgentControlChanged) renderControls();
+    if (pendingSceneStartRequestChanged) renderControls({ reset: true });
+    else if (raiseControlChanged || urgentControlChanged) renderControls();
     updateCameraQueueBadges();
     if (activeSceneIndication?.type === "request") {
       showSceneStartRequestIndication(activeSceneIndication.userId);
