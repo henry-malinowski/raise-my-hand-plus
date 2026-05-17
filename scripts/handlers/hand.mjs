@@ -307,7 +307,7 @@ export function snatchSpotlight() {
 
 /**
  * Delay the current user's spotlight turn.
- * The user stays in the scene queue, but moves behind the current waiters.
+ * The user stays in the scene queue, swapping positions with the next speaker.
  * @returns {boolean} Whether the action handled the keypress.
  */
 export function delaySpotlight() {

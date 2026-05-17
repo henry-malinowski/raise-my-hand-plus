@@ -1223,7 +1223,7 @@ test("lower hand context option is hidden for the active speaker", () => {
   game.users.get = id => ({ id, name: "User", avatar: "" });
 });
 
-test("delaying spotlight moves speaker behind waiting participants", () => {
+test("delaying spotlight swaps speaker with the next participant", () => {
   settingsState.enableQueue = true;
   game.userId = "gm";
   game.user.id = "gm";
@@ -1242,7 +1242,35 @@ test("delaying spotlight moves speaker behind waiting participants", () => {
   handlers.requestSpotlightDelay("u1");
 
   assert.equal(socketState.getGmSpeakerUserId(), "u2");
-  assert.deepEqual(socketState.getGmQueue().getAll(), ["u2", "u3", "u1"]);
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["u2", "u1", "u3"]);
+
+  game.userId = "u1";
+  game.user.id = "u1";
+  game.user.isGM = false;
+});
+
+test("delaying spotlight swaps speaker with the next urgent participant", () => {
+  settingsState.enableQueue = true;
+  game.userId = "gm";
+  game.user.id = "gm";
+  game.user.isGM = true;
+  game.users.activeGM.id = "gm";
+  socketState.getGmQueue().clear();
+  socketState.getGmUrgentUsers().clear();
+  socketState.setGmSpeakerUserId(null);
+  socketState.setGmSceneActive(true);
+
+  handlers.requestQueueJoin("u1");
+  handlers.requestQueueJoin("yellow");
+  handlers.requestQueueJoin("red");
+  handlers.requestUrgent("red");
+  socketState.setGmSpeakerUserId("u1");
+
+  handlers.requestSpotlightDelay("u1");
+
+  assert.equal(socketState.getGmSpeakerUserId(), "red");
+  assert.deepEqual(socketState.getGmQueue().getAll(), ["red", "yellow", "u1"]);
+  assert.equal(socketState.getGmUrgentUsers().has("red"), false);
 
   game.userId = "u1";
   game.user.id = "u1";

@@ -188,8 +188,8 @@ function getSceneIndicationColor(type) {
  * @returns {string|null}
  * @private
  */
-function getNextQueueUserId(queue, urgentUserIds) {
-  const candidates = queue.getAll();
+function getNextQueueUserId(queue, urgentUserIds, excludeUserId = null) {
+  const candidates = queue.getAll().filter(id => id !== excludeUserId);
   return candidates.find(id => urgentUserIds.has(id)) ?? candidates[0] ?? null;
 }
 
@@ -203,6 +203,25 @@ function getNextSpotlightUserId() {
 }
 
 /**
+ * Swap two users in the GM queue.
+ * @param {QueueState} queue - Queue to mutate.
+ * @param {string} firstUserId - First user ID.
+ * @param {string} secondUserId - Second user ID.
+ * @returns {boolean} True if both users were found and swapped.
+ * @private
+ */
+function swapQueuePositions(queue, firstUserId, secondUserId) {
+  const orderedUserIds = queue.getAll();
+  const firstIndex = orderedUserIds.indexOf(firstUserId);
+  const secondIndex = orderedUserIds.indexOf(secondUserId);
+  if (firstIndex === -1 || secondIndex === -1) return false;
+
+  [orderedUserIds[firstIndex], orderedUserIds[secondIndex]] = [orderedUserIds[secondIndex], orderedUserIds[firstIndex]];
+  queue.replace(orderedUserIds);
+  return true;
+}
+
+/**
  * Set the current speaker to the next eligible participant.
  * @param {string|null} [excludeUserId=null] - User ID to avoid selecting.
  * @returns {string|null} The new speaker user ID.
@@ -211,8 +230,7 @@ function getNextSpotlightUserId() {
 function advanceSpotlight(excludeUserId = null) {
   const gmQueue = getGmQueue();
   const gmUrgent = getGmUrgentUsers();
-  const candidates = gmQueue.getAll().filter(id => id !== excludeUserId);
-  const nextSpeaker = candidates.find(id => gmUrgent.has(id)) ?? candidates[0] ?? null;
+  const nextSpeaker = getNextQueueUserId(gmQueue, gmUrgent, excludeUserId);
   if (nextSpeaker) gmUrgent.delete(nextSpeaker);
   setGmSpeakerUserId(nextSpeaker);
   return nextSpeaker;
@@ -1187,7 +1205,7 @@ export function requestSpotlightToggle(userId) {
 
 /**
  * Delay the current speaker's turn and pass spotlight to the next participant.
- * The speaker remains in the queue, but moves behind the current waiters.
+ * The speaker remains in the queue, swapping positions with the next speaker.
  * @param {string} userId - The user ID requesting to delay
  * @returns {void}
  */
@@ -1197,9 +1215,16 @@ export function requestSpotlightDelay(userId) {
   if (getGmSpeakerUserId() !== userId) return;
 
   const gmQueue = getGmQueue();
-  if (!gmQueue.moveToBack(userId)) return;
-  getGmUrgentUsers().delete(userId);
-  advanceSpotlight(userId);
+  if (gmQueue.getPosition(userId) === 0) return;
+
+  const gmUrgent = getGmUrgentUsers();
+  const nextSpeaker = getNextQueueUserId(gmQueue, gmUrgent, userId);
+  if (!nextSpeaker) return;
+  if (!swapQueuePositions(gmQueue, userId, nextSpeaker)) return;
+
+  gmUrgent.delete(userId);
+  gmUrgent.delete(nextSpeaker);
+  setGmSpeakerUserId(nextSpeaker);
   broadcastQueueState();
 }
 
