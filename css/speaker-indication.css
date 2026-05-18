@@ -10,6 +10,8 @@
 }
 
 .raise-my-hand-speaker-banner {
+  --raise-my-hand-speaker-scale: 1;
+
   position: absolute;
   top: 28px;
   left: 50%;
@@ -17,11 +19,11 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: calc(12px * var(--raise-my-hand-speaker-scale));
   box-sizing: border-box;
   min-height: 68px;
   max-width: min(880px, 94vw);
-  padding: 12px 20px;
+  padding: calc(12px * var(--raise-my-hand-speaker-scale)) calc(20px * var(--raise-my-hand-speaker-scale));
   border: 1px solid color-mix(in srgb, var(--raise-my-hand-speaker-color) 45%, transparent);
   border-radius: 8px;
   background: var(--raise-my-hand-speaker-bg);
@@ -50,9 +52,9 @@
 }
 
 .raise-my-hand-speaker-avatar {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
+  width: calc(42px * var(--raise-my-hand-speaker-scale));
+  height: calc(42px * var(--raise-my-hand-speaker-scale));
+  flex: 0 0 calc(42px * var(--raise-my-hand-speaker-scale));
   border-radius: 50%;
   background:
     color-mix(in srgb, var(--raise-my-hand-speaker-color) 24%, transparent)
@@ -63,7 +65,7 @@
 
 .raise-my-hand-speaker-text {
   font-family: var(--font-primary);
-  font-size: 20px;
+  font-size: calc(20px * var(--raise-my-hand-speaker-scale));
   font-weight: 700;
   line-height: 1.2;
   color: var(--raise-my-hand-speaker-text);
@@ -74,7 +76,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: calc(6px * var(--raise-my-hand-speaker-scale));
   margin: 0 0 0 4px;
   padding: 0;
   list-style: none;
@@ -82,20 +84,20 @@
 
 .raise-my-hand-talking-queue-item {
   display: inline-grid;
-  grid-template-columns: 18px minmax(0, auto);
+  grid-template-columns: calc(18px * var(--raise-my-hand-speaker-scale)) minmax(0, auto);
   align-items: center;
   justify-items: center;
-  gap: 6px;
-  height: 36px;
-  max-width: 180px;
+  gap: calc(6px * var(--raise-my-hand-speaker-scale));
+  height: calc(36px * var(--raise-my-hand-speaker-scale));
+  max-width: calc(180px * var(--raise-my-hand-speaker-scale));
   margin: 0;
-  padding: 0 10px;
+  padding: 0 calc(10px * var(--raise-my-hand-speaker-scale));
   border: 1px solid color-mix(in srgb, var(--raise-my-hand-yellow) 55%, transparent);
   border-radius: 8px;
   background: color-mix(in srgb, var(--raise-my-hand-yellow) 14%, transparent);
   color: var(--raise-my-hand-speaker-text);
   font-family: var(--font-primary);
-  font-size: 13px;
+  font-size: calc(13px * var(--raise-my-hand-speaker-scale));
   font-weight: 700;
   line-height: 1;
 }
@@ -120,11 +122,11 @@
 .raise-my-hand-talking-queue-position {
   display: inline-grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
+  width: calc(18px * var(--raise-my-hand-speaker-scale));
+  height: calc(18px * var(--raise-my-hand-speaker-scale));
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.16);
-  font-size: 11px;
+  font-size: calc(11px * var(--raise-my-hand-speaker-scale));
   line-height: 1;
 }
 

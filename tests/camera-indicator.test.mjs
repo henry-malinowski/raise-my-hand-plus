@@ -1120,6 +1120,7 @@ test("speaker indication uses saved client size", () => {
     .querySelector(".raise-my-hand-speaker-banner");
   assert.equal(banner.style.width, "520px");
   assert.equal(banner.style.minHeight, "140px");
+  assert.equal(banner.style.getPropertyValue("--raise-my-hand-speaker-scale"), "2");
 });
 
 test("dragging speaker indication resize handle saves client size", () => {

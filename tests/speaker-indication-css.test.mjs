@@ -35,10 +35,10 @@ test("talking queue chips center the number and name on one line", () => {
   const positionRule = css.match(/\.raise-my-hand-talking-queue-position\s*\{(?<body>[^}]+)\}/)?.groups.body ?? "";
   const nameRule = css.match(/\.raise-my-hand-talking-queue-name\s*\{(?<body>[^}]+)\}/)?.groups.body ?? "";
 
-  assert.match(itemRule, /height:\s*36px;/);
+  assert.match(itemRule, /height:\s*calc\(36px \* var\(--raise-my-hand-speaker-scale\)\);/);
   assert.match(itemRule, /margin:\s*0;/);
   assert.match(itemRule, /display:\s*inline-grid;/);
-  assert.match(itemRule, /grid-template-columns:\s*18px minmax\(0,\s*auto\);/);
+  assert.match(itemRule, /grid-template-columns:\s*calc\(18px \* var\(--raise-my-hand-speaker-scale\)\) minmax\(0,\s*auto\);/);
   assert.match(itemRule, /align-items:\s*center;/);
   assert.match(itemRule, /justify-items:\s*center;/);
   assert.match(positionRule, /line-height:\s*1;/);
@@ -46,6 +46,18 @@ test("talking queue chips center the number and name on one line", () => {
   assert.match(nameRule, /align-items:\s*center;/);
   assert.match(nameRule, /line-height:\s*1;/);
   assert.doesNotMatch(nameRule, /transform:/);
+});
+
+test("speaker banner text scales with resized banner", () => {
+  const bannerRule = css.match(/\.raise-my-hand-speaker-banner\s*\{(?<body>[^}]+)\}/)?.groups.body ?? "";
+  const textRule = css.match(/\.raise-my-hand-speaker-text\s*\{(?<body>[^}]+)\}/)?.groups.body ?? "";
+  const itemRule = css.match(/\.raise-my-hand-talking-queue-item\s*\{(?<body>[^}]+)\}/)?.groups.body ?? "";
+  const positionRule = css.match(/\.raise-my-hand-talking-queue-position\s*\{(?<body>[^}]+)\}/)?.groups.body ?? "";
+
+  assert.match(bannerRule, /--raise-my-hand-speaker-scale:\s*1;/);
+  assert.match(textRule, /font-size:\s*calc\(20px \* var\(--raise-my-hand-speaker-scale\)\);/);
+  assert.match(itemRule, /font-size:\s*calc\(13px \* var\(--raise-my-hand-speaker-scale\)\);/);
+  assert.match(positionRule, /font-size:\s*calc\(11px \* var\(--raise-my-hand-speaker-scale\)\);/);
 });
 
 test("speaker indication palette includes scene started color", () => {

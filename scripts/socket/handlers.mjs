@@ -78,6 +78,9 @@ let localSceneActive = false;
  */
 const cameraIndicators = new Set();
 const SPEAKER_INDICATION_ID = "raise-my-hand-speaker-indication";
+const SPEAKER_INDICATION_BASE_WIDTH = 260;
+const SPEAKER_INDICATION_BASE_HEIGHT = 68;
+const SPEAKER_INDICATION_MAX_SCALE = 4;
 
 /**
  * Track the current large overlay type so badge refreshes do not remove
@@ -339,9 +342,25 @@ function clampSpeakerIndicationSize(width, height) {
   const viewportWidth = globalThis.window?.innerWidth || 1280;
   const viewportHeight = globalThis.window?.innerHeight || 720;
   return {
-    width: Math.round(Math.min(Math.max(260, width), Math.max(260, viewportWidth * 0.94))),
-    height: Math.round(Math.min(Math.max(68, height), Math.max(68, viewportHeight * 0.8)))
+    width: Math.round(Math.min(Math.max(SPEAKER_INDICATION_BASE_WIDTH, width), Math.max(SPEAKER_INDICATION_BASE_WIDTH, viewportWidth * 0.94))),
+    height: Math.round(Math.min(Math.max(SPEAKER_INDICATION_BASE_HEIGHT, height), Math.max(SPEAKER_INDICATION_BASE_HEIGHT, viewportHeight * 0.8)))
   };
+}
+
+/**
+ * Derive a content scale from the resized banner box.
+ * @param {{width: number, height: number}} size - Clamped speaker banner size.
+ * @returns {number}
+ * @private
+ */
+function getSpeakerIndicationScale(size) {
+  const widthScale = size.width / SPEAKER_INDICATION_BASE_WIDTH;
+  const heightScale = size.height / SPEAKER_INDICATION_BASE_HEIGHT;
+  return Math.min(Math.max(1, Math.min(widthScale, heightScale)), SPEAKER_INDICATION_MAX_SCALE);
+}
+
+function formatSpeakerIndicationScale(scale) {
+  return String(Math.round(scale * 100) / 100);
 }
 
 /**
@@ -358,13 +377,16 @@ function applySpeakerIndicationSize(banner, size) {
     banner.classList.remove("is-sized");
     banner.style.width = "";
     banner.style.minHeight = "";
+    banner.style.setProperty("--raise-my-hand-speaker-scale", "1");
     return;
   }
 
   const clamped = clampSpeakerIndicationSize(size.width, size.height);
+  const scale = getSpeakerIndicationScale(clamped);
   banner.classList.add("is-sized");
   banner.style.width = `${clamped.width}px`;
   banner.style.minHeight = `${clamped.height}px`;
+  banner.style.setProperty("--raise-my-hand-speaker-scale", formatSpeakerIndicationScale(scale));
 }
 
 /**
