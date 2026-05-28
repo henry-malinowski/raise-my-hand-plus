@@ -31,9 +31,24 @@
         "toolclip": {
           "heading": "X-Karte zeigen"
         }
+      },
+      "urgent-speak": {
+        "name": "Dringend Sprechen"
+      },
+      "rp-scene": {
+        "start": "RP-Szene starten",
+        "end": "RP-Szene beenden"
+      },
+      "snatch-spotlight": {
+        "name": "Spotlight nehmen",
+        "hint": "Wenn niemand spricht, nimm das Spotlight. Wenn du sprichst, gib es frei und behalte die gehobene Hand."
       }
     },
     "settings": {
+      "speakerIndication": {
+        "name": "Sprecher-Anzeige",
+        "hint": "Zeigt oben am Bildschirm eine Anzeige, wenn jemand das Spotlight nimmt."
+      },
       "handSettings": {
         "name": "Hand-Einstellungen",
         "label": "Hand konfigurieren",
@@ -43,6 +58,10 @@
         "name": "X-Karten-Einstellungen",
         "label": "X-Karte konfigurieren",
         "hint": "Konfiguriere aktivierte Benachrichtigungsmodi der X-Karte und deren Untereinstellungen."
+      },
+      "enableQueue": {
+        "name": "Szenen-Spotlight-Modus",
+        "hint": "Aktiviert dauerhafte RP-Szenenteilnahme im Toggle-Modus. Gehobene Haende bleiben gelb, dringende Haende rot, und Leertaste nimmt das gruene Sprecher-Spotlight, wenn niemand spricht."
       },
       "notificationTimeout": {
         "name": "Abklingzeit",
@@ -68,6 +87,7 @@
               "hint": "Lege die Benachrichtigungsmodi fest.",
               "choices": {
                 "playerList": "Spielerlisten-Symbol",
+                "camera": "Kamera-Anzeige",
                 "aural": "Akustische Benachrichtigung",
                 "popout": "Pop-out-Benachrichtigung",
                 "ui": "Oberflächen-Benachrichtigung",
@@ -84,6 +104,17 @@
             "holdTime": {
               "label": "Haltezeit",
               "hint": "Nicht-Toggle-Modus: Wie lange das Symbol nach Abschluss der Animation bleibt."
+            }
+          },
+          "camera": {
+            "label": "Kamera-Anzeige",
+            "scope": {
+              "label": "Zeigen fuer",
+              "hint": "Lege fest, wer die Handanzeige in Kameraansichten sieht, wenn der Szenen-Spotlight-Modus deaktiviert ist."
+            },
+            "holdTime": {
+              "label": "Haltezeit",
+              "hint": "Nicht-Toggle-Modus: Wie lange die Kameraanzeige nach Abschluss der Animation bleibt."
             }
           },
           "aural": {
@@ -199,6 +230,12 @@
           }
         }
       }
-    }
+    },
+    "SPEAKER_INDICATION": "{name} spricht",
+    "SPEAKER_INDICATION_SELF": "Du sprichst",
+    "RP_SCENE_START_REQUEST": "Jemand moechte eine RP-Szene starten",
+    "RP_SCENE_START_REQUEST_SELF": "Du moechtest eine RP-Szene starten",
+    "RP_SCENE_STARTED": "RP-Szene gestartet",
+    "URGENT_SPEAKER_WAITING": "Dringender Sprecher wartet"
   }
 }

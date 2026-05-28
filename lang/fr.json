@@ -31,9 +31,24 @@
         "toolclip": {
           "heading": "Montrer la Carte-X"
         }
+      },
+      "urgent-speak": {
+        "name": "Parole Urgente"
+      },
+      "rp-scene": {
+        "start": "Demarrer la scene RP",
+        "end": "Terminer la scene RP"
+      },
+      "snatch-spotlight": {
+        "name": "Prendre le focus",
+        "hint": "Si personne ne parle, prendre le focus. Si vous parlez, le relacher et garder la main levee."
       }
     },
     "settings": {
+      "speakerIndication": {
+        "name": "Indication de parole",
+        "hint": "Afficher une indication en haut de l'ecran quand quelqu'un prend le focus."
+      },
       "handSettings": {
         "name": "Paramètres de la main",
         "label": "Configurer la main",
@@ -43,6 +58,10 @@
         "name": "Paramètres de la Carte-X",
         "label": "Configurer la Carte-X",
         "hint": "Configuration des notifications de la Carte-X."
+      },
+      "enableQueue": {
+        "name": "Mode spotlight de scene",
+        "hint": "Active la participation persistante aux scenes RP en mode bascule. Les mains levees restent jaunes, les urgences rouges, et Espace prend le spotlight vert si personne ne parle."
       },
       "notificationTimeout": {
         "name": "Expiration de notification",
@@ -68,6 +87,7 @@
               "hint": "Sélectionner les types de notification.",
               "choices": {
                 "playerList": "Icône liste des joueurs",
+                "camera": "Indicateur camera",
                 "aural": "Sonore",
                 "popout": "Popout",
                 "ui": "Interface",
@@ -84,6 +104,17 @@
             "holdTime": {
               "label": "Durée d'affichage",
               "hint": "Mode non-bascule : Durée d'affichage de l'icône."
+            }
+          },
+          "camera": {
+            "label": "Indicateur camera",
+            "scope": {
+              "label": "Visible pour",
+              "hint": "Qui verra l'indicateur de main sur les cameras quand le mode spotlight de scene est desactive."
+            },
+            "holdTime": {
+              "label": "Duree d'affichage",
+              "hint": "Mode non-bascule : duree d'affichage de l'indicateur camera."
             }
           },
           "aural": {
@@ -199,6 +230,12 @@
           }
         }
       }
-    }
+    },
+    "SPEAKER_INDICATION": "{name} parle",
+    "SPEAKER_INDICATION_SELF": "Vous parlez",
+    "RP_SCENE_START_REQUEST": "Quelqu'un veut demarrer une scene RP",
+    "RP_SCENE_START_REQUEST_SELF": "Vous voulez demarrer une scene RP",
+    "RP_SCENE_STARTED": "Scene RP demarree",
+    "URGENT_SPEAKER_WAITING": "Parole urgente en attente"
   }
 }

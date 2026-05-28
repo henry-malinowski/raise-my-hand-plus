@@ -13,9 +13,56 @@
   /* Move transform origin to the center of the palm area */
   transform-origin: 56.5% 68.5%;
 
+  position: relative;
+
   &::before {
     content: var(--fa);
     text-shadow: var(--raise-my-hand-icon-shadow);
+  }
+
+  /* Legacy numbered badge */
+  &[data-queue-position]::after {
+    content: attr(data-queue-position);
+    position: absolute;
+    bottom: -0.35em;
+    right: -0.65em;
+    font-size: 0.75em;
+    font-weight: bold;
+    font-family: var(--font-primary);
+    line-height: 1;
+    background: #1a1a2e;
+    color: #fff;
+    border: 1.5px solid var(--raise-my-hand-yellow);
+    border-radius: 50%;
+    min-width: 1.4em;
+    height: 1.4em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Speaking state: green megaphone (first in queue) */
+  &.speaking {
+    color: var(--raise-my-hand-green);
+  }
+
+  /* Next state: blue hand */
+  &.next {
+    color: var(--raise-my-hand-blue);
+  }
+
+  &.next[data-queue-position]::after {
+    border-color: var(--raise-my-hand-blue);
+  }
+
+  /* Urgent state: red hand */
+  &.urgent {
+    color: var(--raise-my-hand-red);
+  }
+
+  &.urgent[data-queue-position]::after {
+    border-color: var(--raise-my-hand-red);
   }
 
   /* Fade-in animation: grow from 50% size and fade in */

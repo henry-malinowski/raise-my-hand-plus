@@ -1,3 +1,5 @@
+import { MODULE_ID } from "../../module-id.mjs";
+
 const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 
 /**
@@ -27,7 +29,7 @@ export default class NotificationPopout extends HandlebarsApplicationMixin(Appli
    * @type {Object}
    */
   static PARTS = {
-    content: {template: "modules/raise-my-hand/templates/apps/notification-popout.hbs"}
+    content: {template: `modules/${MODULE_ID}/templates/apps/notification-popout.hbs`}
   };
 
   /**

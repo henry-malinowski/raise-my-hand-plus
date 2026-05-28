@@ -31,9 +31,24 @@
         "toolclip": {
           "heading": "Mostrar Cartão-X"
         }
+      },
+      "urgent-speak": {
+        "name": "Fala Urgente"
+      },
+      "rp-scene": {
+        "start": "Iniciar Cena RP",
+        "end": "Encerrar Cena RP"
+      },
+      "snatch-spotlight": {
+        "name": "Tomar Foco",
+        "hint": "Quando ninguem estiver falando, tomar o foco. Quando voce estiver falando, soltar o foco e manter a mao levantada."
       }
     },
     "settings": {
+      "speakerIndication": {
+        "name": "Indicacao de Fala",
+        "hint": "Mostra uma indicacao no topo da tela quando alguem toma o foco."
+      },
       "handSettings": {
         "name": "Configurações da Mão",
         "label": "Configurar Mão",
@@ -43,6 +58,10 @@
         "name": "Configurações do Cartão-X",
         "label": "Configurar Cartão-X",
         "hint": "Configurar os modos de notificação habilitados do Cartão-X e suas subconfigurações."
+      },
+      "enableQueue": {
+        "name": "Modo Foco de Cena",
+        "hint": "Ativa participacao persistente em cenas RP no modo alternancia. Maos levantadas ficam amarelas, urgentes ficam vermelhas, e Espaco toma o foco verde se ninguem estiver falando."
       },
       "notificationTimeout": {
         "name": "Intervalo de Notificação",
@@ -68,6 +87,7 @@
               "hint": "Configure os modos de notificação.",
               "choices": {
                 "playerList": "Ícone na Lista de Jogadores",
+                "camera": "Indicacao na Camera",
                 "aural": "Notificação Sonora",
                 "popout": "Notificação em Popout",
                 "ui": "Notificação de Interface",
@@ -84,6 +104,17 @@
             "holdTime": {
               "label": "Tempo de Espera",
               "hint": "Modo não-alternar: Por quanto tempo o ícone permanece após a animação ser concluída."
+            }
+          },
+          "camera": {
+            "label": "Indicacao na Camera",
+            "scope": {
+              "label": "Mostrar para",
+              "hint": "Configure quem vera o indicador de mao nas cameras quando o modo foco de cena estiver desabilitado."
+            },
+            "holdTime": {
+              "label": "Tempo de Espera",
+              "hint": "Modo nao-alternar: Por quanto tempo o indicador da camera permanece apos a animacao ser concluida."
             }
           },
           "aural": {
@@ -199,6 +230,12 @@
           }
         }
       }
-    }
+    },
+    "SPEAKER_INDICATION": "{name} fala",
+    "SPEAKER_INDICATION_SELF": "Voce esta falando",
+    "RP_SCENE_START_REQUEST": "Alguem quer iniciar uma cena RP",
+    "RP_SCENE_START_REQUEST_SELF": "Voce quer iniciar uma cena RP",
+    "RP_SCENE_STARTED": "Cena RP iniciada",
+    "URGENT_SPEAKER_WAITING": "Falante urgente aguardando"
   }
 }

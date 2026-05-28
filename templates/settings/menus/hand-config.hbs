@@ -1,17 +1,20 @@
 <section class="standard-form scrollable">
     <fieldset>
         <legend>{{localize "raise-my-hand.settings.HAND.FIELDS.general.label"}}</legend>
-        {{formGroup fields.general.fields.isToggle 
-        value=(and setting.general.isToggle (or (setHas setting.general.notificationModes 'playerList') (setHas setting.general.notificationModes 'popout')))
-        localize=true
-        hidden=(and (not (setHas setting.general.notificationModes 'playerList')) (not (setHas
-        setting.general.notificationModes 'popout')))}}
+        {{formGroup fields.general.fields.isToggle
+        value=setting.general.isToggle
+        localize=true}}
         {{formGroup fields.general.fields.notificationModes value=setting.general.notificationModes localize=true widget="multi-select"}}
     </fieldset>
     <fieldset style="{{#unless (setHas setting.general.notificationModes 'playerList')}}display: none;{{/unless}}" {{disabled (not (setHas setting.general.notificationModes 'playerList'))}}>
         <legend>{{localize "raise-my-hand.settings.HAND.FIELDS.playerList.label"}}</legend>
         {{formGroup fields.playerList.fields.scope value=setting.playerList.scope localize=true}}
         {{formGroup fields.playerList.fields.holdTime value=setting.playerList.holdTime localize=true units="seconds" hidden=setting.general.isToggle}}
+    </fieldset>
+    <fieldset style="{{#unless (setHas setting.general.notificationModes 'camera')}}display: none;{{/unless}}" {{disabled (not (setHas setting.general.notificationModes 'camera'))}}>
+        <legend>{{localize "raise-my-hand.settings.HAND.FIELDS.camera.label"}}</legend>
+        {{formGroup fields.camera.fields.scope value=setting.camera.scope localize=true}}
+        {{formGroup fields.camera.fields.holdTime value=setting.camera.holdTime localize=true units="seconds" hidden=setting.general.isToggle}}
     </fieldset>
     <fieldset style="{{#unless (setHas setting.general.notificationModes 'aural')}}display: none;{{/unless}}" {{disabled (not (setHas setting.general.notificationModes 'aural'))}}>
         <legend>{{localize "raise-my-hand.settings.HAND.FIELDS.aural.label"}}</legend>

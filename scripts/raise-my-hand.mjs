@@ -1,17 +1,16 @@
-/**
- * The module ID used for FoundryVTT module registration and settings.
- * @type {string}
- */
-export const MODULE_ID = 'raise-my-hand';
+import { MODULE_ID } from "./module-id.mjs";
+export { MODULE_ID };
 
 import { default as HandConfig } from "./applications/settings/hand-config.mjs";
 import { default as XCardConfig } from "./applications/settings/xcard-config.mjs";
 import HandSettingsData from "./data/settings/HandSettingsData.mjs";
 import XCardSettingsData from "./data/settings/XCardSettingsData.mjs";
-import { initSocket, getSocket } from "./socket/socket.mjs";
-import { clearPlayerListIcons } from "./socket/handlers.mjs";
+import * as handHandlers from "./handlers/hand.mjs";
+import { initSocket, getSocket, getGmQueue, getGmUrgentUsers, getGmSpeakerUserId, setGmSpeakerUserId, setGmSceneActive, broadcastQueueState } from "./socket/socket.mjs";
+import { clearPlayerListIcons, reapplyQueueIndicators, updateCameraQueueBadges, removePlayerListIcon } from "./socket/handlers.mjs";
 import { registerTokenControls, getLowerHandContextOptions } from "./controls.mjs";
 import { registerHandlebarsHelpers } from "./applications/handlebars.mjs";
+import { api } from "./api.mjs";
 
 /**
  * The current settings era version for migration tracking.
@@ -31,6 +30,12 @@ Hooks.on("getUserContextOptions", getLowerHandContextOptions); // get the contex
 Hooks.on("getSceneControlButtons", registerTokenControls); // register the token controls
 Hooks.on("clientSettingChanged", clientSettingChanged); // update the controls toolclip when keybindings are changed
 
+// Queue lifecycle hooks
+Hooks.on("userConnected", onUserConnected);
+Hooks.on("userDisconnected", onUserDisconnected);
+Hooks.on("renderPlayerList", reapplyQueueIndicators);
+Hooks.on("renderCameraViews", updateCameraQueueBadges);
+
 /**
  * Initialize the module.
  * Called during the 'init' hook to register handlebars helpers, settings, and keybindings.
@@ -40,6 +45,9 @@ function init() {
   registerHandlebarsHelpers();
   registerSettings(); // registers the modules settings as well as 'settings-era' with a default of "1"
   registerKeybindings();
+
+  // Expose public API for other modules
+  game.modules.get(MODULE_ID).api = api;
 }
 
 /**
@@ -64,6 +72,33 @@ function registerSettings() {
   });
 
   // Main settings (visible in main settings)
+  game.settings.register(MODULE_ID, 'enableQueue', {
+    name: "raise-my-hand.settings.enableQueue.name",
+    hint: "raise-my-hand.settings.enableQueue.hint",
+    scope: 'world',
+    config: true,
+    default: false,
+    type: Boolean,
+    restricted: true,
+    onChange: (value) => {
+      // Re-render controls so the X-card/urgent button updates
+      ui.controls.render({reset: true});
+      updateCameraQueueBadges();
+
+      // Clear queue if queue was disabled
+      if (!value) {
+        if (game.users.activeGM?.id === game.userId) {
+          const gmQueue = getGmQueue();
+          gmQueue.clear();
+          getGmUrgentUsers().clear();
+          setGmSpeakerUserId(null);
+          setGmSceneActive(false);
+          broadcastQueueState();
+        }
+      }
+    }
+  });
+
   game.settings.register(MODULE_ID, 'notificationTimeout', {
     name: "raise-my-hand.settings.notificationTimeout.name",
     hint: "raise-my-hand.settings.notificationTimeout.hint",
@@ -79,6 +114,33 @@ function registerSettings() {
     restricted: true
   });
 
+  game.settings.register(MODULE_ID, 'speakerIndication', {
+    name: "raise-my-hand.settings.speakerIndication.name",
+    hint: "raise-my-hand.settings.speakerIndication.hint",
+    scope: 'world',
+    config: true,
+    default: true,
+    type: Boolean,
+    restricted: true,
+    onChange: () => updateCameraQueueBadges()
+  });
+
+  game.settings.register(MODULE_ID, 'speakerIndicationPosition', {
+    scope: 'client',
+    config: false,
+    default: null,
+    type: Object,
+    onChange: () => updateCameraQueueBadges()
+  });
+
+  game.settings.register(MODULE_ID, 'speakerIndicationSize', {
+    scope: 'client',
+    config: false,
+    default: null,
+    type: Object,
+    onChange: () => updateCameraQueueBadges()
+  });
+
   // Hand Settings object (hidden from main config, shown in dedicated menu)
   game.settings.register(MODULE_ID, "handSettings", {
     scope: 'world',
@@ -89,11 +151,24 @@ function registerSettings() {
     onChange: (value, options, userId) => {
       // Retrigger the 'getSceneControlButtons' hook to update controls
       ui.controls.render({reset: true});
+      updateCameraQueueBadges();
 
       // if the new mode is not a toggle, clear the player list icons
       if (!value.general.isToggle) {
         const socket = getSocket();
         socket?.executeForEveryone(clearPlayerListIcons);
+      }
+
+      // Clear queue if toggle mode turned off
+      if (!value.general.isToggle) {
+        if (game.users.activeGM?.id === game.userId) {
+          const gmQueue = getGmQueue();
+          gmQueue.clear();
+          getGmUrgentUsers().clear();
+          setGmSpeakerUserId(null);
+          setGmSceneActive(false);
+          broadcastQueueState();
+        }
       }
     },
   });
@@ -143,16 +218,7 @@ function registerKeybindings() {
     editable: [{ key: "KeyH", modifiers: []}],
     onDown: (context) => {
       const tool = ui.controls.controls["tokens"].tools["raise-hand"];
-      if (!tool) return; // this can happen if the control is not registered yet or all modes are disabled
-
-      // Manual toggle required: ui.controls.activate({toggles}) only works for by
-      // force-switching to "tokens" control, which is undesirable for our use case.
-      if (tool.toggle) {
-        tool.active = !tool.active; // toggle the control state to simulate an onChange event
-        tool.onChange(context.event, tool.active);
-      } else {
-        tool.onChange(context.event, true);
-      }
+      return handHandlers.handleRaiseHandKeybinding(tool, context.event);
     },
     reservedModifiers: []
   });
@@ -169,6 +235,30 @@ function registerKeybindings() {
     },
     reservedModifiers: []
   });  
+
+  game.keybindings.register(MODULE_ID, "snatch-spotlight", {
+    name: 'raise-my-hand.controls.snatch-spotlight.name',
+    hint: 'raise-my-hand.controls.snatch-spotlight.hint',
+    editable: [{ key: "Space", modifiers: []}],
+    onDown: (context) => {
+      if (context.event?.repeat) return false;
+      const handled = handHandlers.snatchSpotlight();
+      return handled;
+    },
+    reservedModifiers: []
+  });
+
+  game.keybindings.register(MODULE_ID, "delay-spotlight", {
+    name: 'raise-my-hand.controls.delay-spotlight.name',
+    hint: 'raise-my-hand.controls.delay-spotlight.hint',
+    editable: [{ key: "Space", modifiers: ["Shift"]}],
+    onDown: (context) => {
+      if (context.event?.repeat) return false;
+      const handled = handHandlers.delaySpotlight();
+      return handled;
+    },
+    reservedModifiers: []
+  });
 }
 
 /**
@@ -185,6 +275,9 @@ async function ready() {
   if (foundry.utils.isNewerVersion(CURRENT_ERA, era)) {
     await migrateSettings();
   }
+
+  // Migrate enableQueue from handSettings.general to top-level setting
+  await migrateEnableQueue();
 }
 
 /**
@@ -281,6 +374,76 @@ async function migrateSettings() {
   ]);
   
   ui.notifications.info(`✋ ${MODULE_ID} | Settings migration complete.`);
+}
+
+/**
+ * Migrate enableQueue from handSettings.general to a top-level module setting.
+ * Reads the raw stored value and copies it if present, then re-saves handSettings
+ * so the DataModel's migrateData strips the old field.
+ * Only runs once — after migration, the raw value no longer contains enableQueue.
+ * @returns {Promise<void>}
+ */
+async function migrateEnableQueue() {
+  if (!game.user.isGM) return;
+
+  // Read the raw stored object (before DataModel cleaning)
+  const worldSettings = game.settings.storage.get("world");
+  const raw = worldSettings.get(`${MODULE_ID}.handSettings`);
+  if (!raw?.general || !("enableQueue" in raw.general)) return;
+
+  console.log(`${MODULE_ID} | Migrating enableQueue to top-level setting`);
+
+  // Copy the old value to the new top-level setting
+  if (raw.general.enableQueue) {
+    await game.settings.set(MODULE_ID, "enableQueue", true);
+  }
+
+  // Re-save handSettings so DataModel.migrateData strips the old field
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  await game.settings.set(MODULE_ID, "handSettings", handSettings.toObject());
+}
+
+/**
+ * When a user connects, if we are the active GM, broadcast the current queue state
+ * so the new client receives the queue.
+ * @param {User} user - The user who connected
+ * @param {object} context - Connection context
+ * @returns {void}
+ */
+function onUserConnected(user, context) {
+  if (game.users.activeGM?.id !== game.userId) return;
+
+  // Always broadcast queue state so the new client receives it
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  if (game.settings.get(MODULE_ID, "enableQueue") && handSettings.general.isToggle) {
+    broadcastQueueState();
+  }
+}
+
+/**
+ * When a user disconnects, if we are the active GM, clean up their raised hand
+ * indicators and remove them from the queue (if queue mode is active).
+ * @param {User} user - The user who disconnected
+ * @param {object} context - Connection context
+ * @returns {void}
+ */
+function onUserDisconnected(user, context) {
+  if (game.users.activeGM?.id !== game.userId) return;
+
+  // Always clean up raised hand indicators for the disconnected user
+  const socket = getSocket();
+  socket?.executeForEveryone(removePlayerListIcon, user.id);
+
+  // Clean up queue state if queue mode is active
+  const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  if (game.settings.get(MODULE_ID, "enableQueue") && handSettings.general.isToggle) {
+    const gmQueue = getGmQueue();
+    if (gmQueue.remove(user.id)) {
+      getGmUrgentUsers().delete(user.id);
+      if (getGmSpeakerUserId() === user.id) setGmSpeakerUserId(null);
+      broadcastQueueState();
+    }
+  }
 }
 
 /**
