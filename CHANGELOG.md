@@ -1,3 +1,5 @@
+# Changelog
+
 ## 3.0.0
 ### General Changes
 - Migrated to esbuild bundling for improved load times by cutting down on successive HTTP requests.
@@ -88,8 +90,14 @@
 - v10 fixes - no error/no warns
 - filepicker! really cool
 
-## 1.3.5
-Update lang files in en, de and fr ([issue #11](https://github.com/henry-malinowski/raise-my-hand-plus/issues/11))
+## [1.3.5](https://github.com/henry-malinowski/raise-my-hand-plus/releases/tag/v1.3.5) - 2022-03-14
 
-## 1.3.4
-toogle mod option
+### Added
+
+- Lang files in en, de and fr ([issue #11](https://github.com/henry-malinowski/raise-my-hand-plus/issues/11))
+
+## [1.3.4](https://github.com/henry-malinowski/raise-my-hand-plus/releases/tag/v1.3.4) - 2022-02-14
+
+### Added
+
+- Toggle mod option
