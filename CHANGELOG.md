@@ -128,36 +128,14 @@
 - v10 fixes - no error/no warns
 - filepicker! really cool
 
-## 1.3.5
+## [1.3.5](https://github.com/henry-malinowski/raise-my-hand-plus/releases/tag/v1.3.5) - 2022-03-14
 
-Update lang files in en, de and fr ([issue #11](https://github.com/henry-malinowski/raise-my-hand-plus/issues/11))
+### Added
 
-## 1.3.4
+- Lang files in en, de and fr ([issue #11](https://github.com/henry-malinowski/raise-my-hand-plus/issues/11))
 
-toogle mod option
-r to close
+## [1.3.4](https://github.com/henry-malinowski/raise-my-hand-plus/releases/tag/v1.3.4) - 2022-02-14
 
-## 1.4.1
+### Added
 
-- Disable X-Card Key
-- Add volume slider for x-card sound
-
-## 1.4.0
-
-- removed shake screen (kandashi fluid is broken)
-- added dialog option
-- dialog detect img size
-- x card button on side bar
-- x card key
-- x card sound
-- localization en/pt-br
-- v10 fixes - no error/no warns
-- filepicker! really cool
-
-## 1.3.5
-
-Update lang files in en, de and fr ([issue #11](https://github.com/henry-malinowski/raise-my-hand-plus/issues/11))
-
-## 1.3.4
-
-toogle mod option
+- Toggle mod option
