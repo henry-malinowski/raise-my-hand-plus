@@ -11,6 +11,11 @@
         {{formGroup fields.playerList.fields.scope value=setting.playerList.scope localize=true}}
         {{formGroup fields.playerList.fields.holdTime value=setting.playerList.holdTime localize=true units="seconds" hidden=setting.general.isToggle}}
     </fieldset>
+    <fieldset style="{{#unless (setHas setting.general.notificationModes 'camera')}}display: none;{{/unless}}" {{disabled (not (setHas setting.general.notificationModes 'camera'))}}>
+        <legend>{{localize "raise-my-hand.settings.HAND.FIELDS.camera.label"}}</legend>
+        {{formGroup fields.camera.fields.scope value=setting.camera.scope localize=true}}
+        {{formGroup fields.camera.fields.holdTime value=setting.camera.holdTime localize=true units="seconds" hidden=setting.general.isToggle}}
+    </fieldset>
     <fieldset style="{{#unless (setHas setting.general.notificationModes 'aural')}}display: none;{{/unless}}" {{disabled (not (setHas setting.general.notificationModes 'aural'))}}>
         <legend>{{localize "raise-my-hand.settings.HAND.FIELDS.aural.label"}}</legend>
         {{formGroup fields.aural.fields.scope value=setting.aural.scope localize=true}}

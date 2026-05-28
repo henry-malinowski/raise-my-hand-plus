@@ -1,11 +1,7 @@
-/**
- * The module ID used for FoundryVTT module registration and settings.
- * @type {string}
- */
-const MODULE_ID = 'raise-my-hand';
+import { MODULE_ID } from "./module-id.mjs";
 import * as handHandlers from "./handlers/hand.mjs";
 import * as xcardHandlers from "./handlers/xcard.mjs";
-import { isHandRaised } from "./socket/handlers.mjs";
+import { getSpeakerUserId, hasPendingSceneStartRequest, isHandRaised, isSceneActive, isUrgentHandRaised } from "./socket/handlers.mjs";
 import HandSettingsData from "./data/settings/HandSettingsData.mjs";
 import XCardSettingsData from "./data/settings/XCardSettingsData.mjs";
 import ScopeField from "./data/settings/ScopeField.mjs";
@@ -23,6 +19,10 @@ const {KeyboardManager} = foundry.helpers.interaction;
 export function registerTokenControls(controls) {
   const tokenControlsTools = controls['tokens'].tools;
   const handSettings = game.settings.get(MODULE_ID, "handSettings");
+  const isQueueMode = handSettings.general.isToggle && game.settings.get(MODULE_ID, "enableQueue");
+  const isGmSceneController = isQueueMode && game.user.isGM;
+  const isActiveSceneSpeaker = isQueueMode && isSceneActive() && getSpeakerUserId() === game.userId;
+  const playerSceneControlsVisible = !isQueueMode || !game.user.isGM;
 
   /**
    * The raise hand control.
@@ -39,9 +39,11 @@ export function registerTokenControls(controls) {
     order: Object.keys(tokenControlsTools).length,
     button: !handSettings.general.isToggle,
     toggle: handSettings.general.isToggle,
-    active: false, // initially deasserted, unused for button mode
-    visible: handSettings.general.notificationModes.size > 0
-      || (handSettings.general.isToggle && game.settings.get(MODULE_ID, "enableQueue")),
+    active: isQueueMode && isSceneActive() && !game.user.isGM && isHandRaised(game.userId, handSettings),
+    visible: !isGmSceneController
+      && playerSceneControlsVisible
+      && !isActiveSceneSpeaker
+      && (handSettings.general.notificationModes.size > 0 || isQueueMode),
     ...(handSettings.general.isToggle
       ? { onChange: (event, active) => handHandlers.toggle(active) }
       : { onChange: (event, active) => handHandlers.raise() }
@@ -62,16 +64,17 @@ export function registerTokenControls(controls) {
    * @type {SceneControl}
    */
   const xCardSettings = game.settings.get(MODULE_ID, "xCardSettings");
-  const isQueueMode = handSettings.general.isToggle && game.settings.get(MODULE_ID, "enableQueue");
   tokenControlsTools['show-xcard'] = {
     name: 'show-xcard',
     title: isQueueMode ? 'raise-my-hand.controls.urgent-speak.name' : 'raise-my-hand.controls.show-xcard.name',
     icon: isQueueMode ? 'fas fa-hand-paper' : 'fas fa-times',
     order: Object.keys(tokenControlsTools).length,
-    button: true,
-    visible: isQueueMode || xCardSettings.isEnabled,
+    button: !isQueueMode,
+    toggle: isQueueMode,
+    active: isQueueMode && isUrgentHandRaised(game.userId),
+    visible: isQueueMode ? !game.user.isGM && !isActiveSceneSpeaker : xCardSettings.isEnabled,
     onChange: isQueueMode
-      ? (event, active) => handHandlers.urgentSpeak()
+      ? (event, active) => handHandlers.urgentSpeak(active)
       : (event, active) => xcardHandlers.showXCardDialog(),
     toolclip: {
       src: `modules/${MODULE_ID}/assets/toolclips/tools/token-xcard.webm`,
@@ -79,6 +82,20 @@ export function registerTokenControls(controls) {
       items: SceneControls.buildToolclipItems(buildXCardToolclipItems(xCardSettings))
     }
   };
+
+  if (isQueueMode && game.user.isGM) {
+    const active = isSceneActive();
+    const visible = active || hasPendingSceneStartRequest();
+    tokenControlsTools['rp-scene'] = {
+      name: 'rp-scene',
+      title: active ? 'raise-my-hand.controls.rp-scene.end' : 'raise-my-hand.controls.rp-scene.start',
+      icon: active ? 'fas fa-stop' : 'fas fa-play',
+      order: Object.keys(tokenControlsTools).length,
+      button: true,
+      visible,
+      onChange: () => handHandlers.toggleRpScene()
+    };
+  }
 }
 
 /**
@@ -108,6 +125,9 @@ export function getLowerHandContextOptions(app, menuItems) {
 
       // only show if the user is a GM and the target user is the same as the current user
       if (!game.user.isGM && (game.user.id !== targetUserId)) return false;
+
+      // The active speaker must finish/delay spotlight, not lower their queue hand.
+      if (isSceneActive() && getSpeakerUserId() === targetUserId) return false;
       
       // Check if the hand is presently raised for the target user
       return isHandRaised(targetUserId, handSettings);

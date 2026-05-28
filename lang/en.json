@@ -24,7 +24,8 @@
         "toggle": {
           "true": "Lower Hand",
           "false": "Raise Hand"
-        }
+        },
+        "finish": "Finish Speak"
       },
       "show-xcard": {
         "name": "Show X-Card",
@@ -35,9 +36,25 @@
       },
       "urgent-speak": {
         "name": "Urgent Speak"
+      },
+      "rp-scene": {
+        "start": "Start RP Scene",
+        "end": "End RP Scene"
+      },
+      "snatch-spotlight": {
+        "name": "Talking Queue",
+        "hint": "When you are speaking, finish your turn and pass spotlight to the next speaker. When spotlight is available, take it if you are next."
+      },
+      "delay-spotlight": {
+        "name": "Delay Talking Turn",
+        "hint": "When you are speaking, keep your hand raised but pass spotlight to the next speaker."
       }
     },
     "settings": {
+      "speakerIndication": {
+        "name": "Speaker Indication",
+        "hint": "Show a top-screen indication when someone snatches the spotlight."
+      },
       "handSettings": {
         "name": "Hand Settings",
         "label": "Configure Hand",
@@ -49,8 +66,8 @@
         "hint": "Configure X-Card enabled notification modes and their sub-settings."
       },
       "enableQueue": {
-        "name": "Speaking Queue",
-        "hint": "Enable a FIFO speaking queue when toggle mode is on. Shows queue position on hand icons and adds a queue panel."
+        "name": "Scene Spotlight Mode",
+        "hint": "Enable persistent RP scene participation in toggle mode. Raised hands stay yellow, urgent hands are red, and Space snatches the green speaker spotlight when no one is speaking."
       },
       "notificationTimeout": {
         "name": "Notification Timeout",
@@ -76,6 +93,7 @@
               "hint": "Set the notification modes.",
               "choices": {
                 "playerList": "Player List Icon",
+                "camera": "Camera Indication",
                 "aural": "Aural Notification",
                 "popout": "Popout Notification",
                 "ui": "UI Notification",
@@ -92,6 +110,17 @@
             "holdTime": {
               "label": "Hold Time",
               "hint": "Non-toggle mode: How long the icon remains after the animation completes."
+            }
+          },
+          "camera": {
+            "label": "Camera Indication",
+            "scope": {
+              "label": "Show for",
+              "hint": "Set who will see the hand indicator on camera views when scene spotlight mode is disabled."
+            },
+            "holdTime": {
+              "label": "Hold Time",
+              "hint": "Non-toggle mode: How long the camera indicator remains after the animation completes."
             }
           },
           "aural": {
@@ -207,6 +236,12 @@
           }
         }
       }
-    }
+    },
+    "SPEAKER_INDICATION": "{name} speaks",
+    "SPEAKER_INDICATION_SELF": "You are speaking",
+    "RP_SCENE_START_REQUEST": "Someone wants to start RP scene",
+    "RP_SCENE_START_REQUEST_SELF": "You want to start RP scene",
+    "RP_SCENE_STARTED": "RP scene started!",
+    "URGENT_SPEAKER_WAITING": "Urgent speaker waiting!"
   }
 }

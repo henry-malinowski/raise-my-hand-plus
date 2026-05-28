@@ -20,7 +20,7 @@
     text-shadow: var(--raise-my-hand-icon-shadow);
   }
 
-  /* Queue position badge */
+  /* Legacy numbered badge */
   &[data-queue-position]::after {
     content: attr(data-queue-position);
     position: absolute;
@@ -45,6 +45,15 @@
   /* Speaking state: green megaphone (first in queue) */
   &.speaking {
     color: var(--raise-my-hand-green);
+  }
+
+  /* Next state: blue hand */
+  &.next {
+    color: var(--raise-my-hand-blue);
+  }
+
+  &.next[data-queue-position]::after {
+    border-color: var(--raise-my-hand-blue);
   }
 
   /* Urgent state: red hand */

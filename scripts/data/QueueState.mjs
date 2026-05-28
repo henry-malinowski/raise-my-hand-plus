@@ -1,5 +1,5 @@
 /**
- * Simple FIFO queue for tracking speaking order.
+ * Simple ordered list for tracking scene participants.
  * This is transient session state (not persisted to settings).
  * The GM client holds the authoritative instance; player clients hold read-only mirrors.
  */
@@ -27,6 +27,19 @@ export default class QueueState {
     const index = this.#queue.indexOf(userId);
     if (index === -1) return false;
     this.#queue.splice(index, 1);
+    return true;
+  }
+
+  /**
+   * Move a user to the back of the queue if present.
+   * @param {string} userId - The user ID to move
+   * @returns {boolean} True if the user was found and moved
+   */
+  moveToBack(userId) {
+    const index = this.#queue.indexOf(userId);
+    if (index === -1) return false;
+    this.#queue.splice(index, 1);
+    this.#queue.push(userId);
     return true;
   }
 
